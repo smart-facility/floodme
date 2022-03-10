@@ -36,24 +36,32 @@
 
 
         let margin = {top: 10, right: 30, bottom: 30, left: 60},
-            width = 300 - margin.left - margin.right,
+            width = 360 - margin.left - margin.right,
             height = 260 - margin.top - margin.bottom;
 
         
         tooltip = d3.select("body").append("div")
             .attr("id", "tooltip")
             .attr("style", "position: absolute; opacity: 0; z-index: 5; visibility: hidden;")
-            .style("background-color", "rgba(200,200,200,0.4")
+            .style("color", "white")
+            .style("background-color", "rgba(50,50,50,0.8")
             .style("user-select", "none")
-            //.style("color", "white")
+        
+        // tooltip
+        //     .append("div")
+        //     .attr("padding-bottom", "50px")
+        //     .style("visibility", "visible")
+        //     .style("position", "absolute")
+        //     .attr("id", "tooltipsensorid")
+        //     .style("color", "white")
             
         let graph = tooltip
             .append("svg")
                 .attr("id", "graph")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
-            .append("g")
-                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+        .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
 
 
         let handleZoom = () => {
@@ -160,6 +168,7 @@
                         )
 
                 updateGraph = () => {
+                    tooltip.select("div").attr("text", "WL-Sensor "+selectedSensor)
                     dataselected = data.filter(d => d.id == selectedSensor)
                     
                     updated = graph.select("path#data")
