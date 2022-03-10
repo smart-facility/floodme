@@ -34,6 +34,8 @@ def catchment():
 @app.route("/api/rainfall")
 def rainfall():
     """a"""
+    startdate = str(request.args["startdate"])
+    enddate = str(request.args["enddate"])
     curs = conn.cursor()
     curs.execute("""
         SELECT json_build_object(
@@ -47,8 +49,8 @@ def rainfall():
                 (SELECT st_expand(st_envelope(st_collect(geom)), 0.01) FROM catchment)
             )
         )
-        WHERE val > 0 AND stamp BETWEEN '20200201' AND '20200202' LIMIT 30) AS t(geom, val, stamp)
-    """)
+        WHERE val > 0 AND stamp BETWEEN %(start)s AND %(end)s) AS t(geom, val, stamp)
+    """, {"start": startdate, "end": enddate})
     return jsonify(curs.fetchone()[0])
 
 @app.route("/api/sensors")

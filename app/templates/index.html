@@ -67,7 +67,7 @@
             })
         })
 
-        fetch(api_endpoint+"rainfall").then(response => {
+        fetch(api_endpoint+"rainfall?startdate=20200207_1800&enddate=20200207_1801").then(response => {
             response.json().then(json => {
                 svg.append("g")
                     .attr("id", "rainfall")
@@ -118,14 +118,14 @@
                 dataselected = data.filter(d => d.id == 25)
                 
                 let x = d3.scaleTime()
-                    .domain(d3.extent(dataselected, d => d.stamp))
+                    .domain(d3.extent(data, d => d.stamp))
                     .range([ 0, width ]);
                 graph.append("g")
                     .attr("transform", "translate(0," + height + ")")
                     .call(d3.axisBottom(x));
 
                 let y = d3.scaleLinear()
-                    .domain([0, d3.max(dataselected, d => +d.level)])
+                    .domain([0, d3.max(data, d => +d.level)])
                     .range([ height, 0 ]);
                 graph.append("g")
                     .call(d3.axisLeft(y));
