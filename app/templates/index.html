@@ -88,7 +88,6 @@
                     .join("path")
                     .attr("d", path)
                     .style("fill", "red")
-                    // .attr("id", d => d.properties.id)
                     .on("mouseover", d => {
                         tooltip.transition().duration(200).style("opacity", 1).text(d.properties.id)
                     })
@@ -103,7 +102,42 @@
             })
         })
 
-        //fetch("api_endpoint+"sensors/data?startdate=20200207&enddate=20200207_0100")
+        fetch(api_endpoint+"sensors/data?startdate=20200207&enddate=20200208").then(response => {
+            response.json().then(json => {
+                let stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
+                data = json.features
+                data.forEach(d => {
+                    d.stamp = stringtodate(d.stamp)
+                })
+
+                data = data.filter(d => d.id == 25)
+                
+                let x = d3.scaleTime()
+                    .domain(d3.extent(data, d => d.stamp))
+                    .range([ 0, width ]);
+                graph.append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x));
+
+                let y = d3.scaleLinear()
+                    .domain([0, d3.max(data, d => +d.level)])
+                    .range([ height, 0 ]);
+                graph.append("g")
+                    .call(d3.axisLeft(y));
+
+                graph.append("path")
+                    .datum(data)
+                    .attr("fill", "none")
+                    .attr("stroke", "steelblue")
+                    .attr("stroke-width", 1.5)
+                    .attr("d", d3.line()
+                        .x(d => x(d.stamp))
+                        .y(d => y(d.level))
+                        )
+
+
+            })
+        })
 
         setTimeout(() => {
             d3.select("#catchment").lower().lower()
