@@ -20,6 +20,8 @@
     <h1>Floodaware Dashboard</h1>
     
       <script>
+        let api_endpoint = window.location.href+"api/"
+
         let projection = d3.geoEquirectangular().center([150.863256445, -34.37642044]).scale(500000)
         let path = d3.geoPath().projection(projection)
         let svg = d3.select("body")
@@ -28,18 +30,28 @@
             .attr("width", 1000)
             .attr("height", 1000)
 
+
+        let margin = {top: 10, right: 30, bottom: 30, left: 60},
+            width = 460 - margin.left - margin.right,
+            height = 400 - margin.top - margin.bottom;
+
         let graph = d3.select("body")
             .append("svg")
-            .attr("id", "graph")
-            .attr("width", 500)
-            .attr("height", 500)
+                .attr("id", "graph")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
 
         tooltip = d3.select("body").append("div")
             .attr("id", "tooltip")
             .attr("style", "position: absolute; opacity: 0; z-index: 5;")
             .style("color", "white")
 
-        fetch("http://localhost:5000/api/catchment").then(response => {
+
+
+        fetch(api_endpoint+"catchment").then(response => {
             response.json().then(json => {
                 svg.append("g")
                     .attr("id", "catchment")
@@ -52,7 +64,7 @@
             })
         })
 
-        fetch("http://localhost:5000/api/rainfall").then(response => {
+        fetch(api_endpoint+"rainfall").then(response => {
             response.json().then(json => {
                 svg.append("g")
                     .attr("id", "rainfall")
@@ -67,7 +79,7 @@
             })
         })
 
-        fetch("http://localhost:5000/api/sensors").then(response => {
+        fetch(api_endpoint+"sensors").then(response => {
             response.json().then(json => {
                 svg.append("g")
                     .attr("id", "sensors")
@@ -90,6 +102,8 @@
                     })
             })
         })
+
+        //fetch("api_endpoint+"sensors/data?startdate=20200207&enddate=20200207_0100")
 
         setTimeout(() => {
             d3.select("#catchment").lower().lower()
