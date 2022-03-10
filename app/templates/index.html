@@ -22,6 +22,9 @@
       <script>
         let api_endpoint = window.location.href+"api/"
 
+        let selectedSensor = 0
+        let updateGraph = () => {}
+
         let projection = d3.geoEquirectangular().center([150.863256445, -34.37642044]).scale(500000)
         let path = d3.geoPath().projection(projection)
         let svg = d3.select("body")
@@ -32,23 +35,23 @@
 
 
         let margin = {top: 10, right: 30, bottom: 30, left: 60},
-            width = 460 - margin.left - margin.right,
-            height = 400 - margin.top - margin.bottom;
+            width = 300 - margin.left - margin.right,
+            height = 260 - margin.top - margin.bottom;
 
-        let graph = d3.select("body")
+        
+        tooltip = d3.select("body").append("div")
+            .attr("id", "tooltip")
+            .attr("style", "position: absolute; opacity: 0; z-index: 5; visibility: hidden;")
+            .style("background-color", "rgba(200,200,200,0.4")
+            //.style("color", "white")
+            
+        let graph = tooltip
             .append("svg")
                 .attr("id", "graph")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
             .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-
-
-        tooltip = d3.select("body").append("div")
-            .attr("id", "tooltip")
-            .attr("style", "position: absolute; opacity: 0; z-index: 5;")
-            .style("color", "white")
-
 
 
         fetch(api_endpoint+"catchment").then(response => {
@@ -89,12 +92,14 @@
                     .attr("d", path)
                     .style("fill", "red")
                     .on("mouseover", d => {
-                        tooltip.transition().duration(200).style("opacity", 1).text(d.properties.id)
+                        selectedSensor = d.properties.id
+                        updateGraph()
+                        tooltip.transition().duration(200).style("opacity", 1).style("visibility", "visible")//.text(d.properties.id)
                     })
                     .on("mouseout", d => {
-                        tooltip.style("opacity", 0)
+                        tooltip.style("opacity", 0).style("visibility", "hidden")
                     })
-                    .on("mousemove", () => {
+                    .on("mousemove", d => {
                         tooltip
                             .style("left", (d3.event.pageX+10)+"px")
                             .style("top",(d3.event.pageY+10)+"px")
@@ -110,23 +115,24 @@
                     d.stamp = stringtodate(d.stamp)
                 })
 
-                data = data.filter(d => d.id == 25)
+                dataselected = data.filter(d => d.id == 25)
                 
                 let x = d3.scaleTime()
-                    .domain(d3.extent(data, d => d.stamp))
+                    .domain(d3.extent(dataselected, d => d.stamp))
                     .range([ 0, width ]);
                 graph.append("g")
                     .attr("transform", "translate(0," + height + ")")
                     .call(d3.axisBottom(x));
 
                 let y = d3.scaleLinear()
-                    .domain([0, d3.max(data, d => +d.level)])
+                    .domain([0, d3.max(dataselected, d => +d.level)])
                     .range([ height, 0 ]);
                 graph.append("g")
                     .call(d3.axisLeft(y));
 
                 graph.append("path")
-                    .datum(data)
+                    .attr("id", "data")
+                    .datum(dataselected)
                     .attr("fill", "none")
                     .attr("stroke", "steelblue")
                     .attr("stroke-width", 1.5)
@@ -135,6 +141,21 @@
                         .y(d => y(d.level))
                         )
 
+                updateGraph = () => {
+                    dataselected = data.filter(d => d.id == selectedSensor)
+                    
+                    updated = graph.select("path#data")
+                        .datum(dataselected)
+                        .attr("fill", "none")
+                        .attr("stroke", "steelblue")
+                        .attr("stroke-width", 1.5)
+                        .attr("d", d3.line()
+                            .x(d => x(d.stamp))
+                            .y(d => y(d.level))
+                            )
+
+                 }
+
 
             })
         })
@@ -142,7 +163,7 @@
         setTimeout(() => {
             d3.select("#catchment").lower().lower()
             d3.select("#sensors").raise().raise()   
-        }, 3000)
+        }, 750)
         
         
     </script>
