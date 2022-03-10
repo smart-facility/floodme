@@ -10,7 +10,7 @@
             font-family: "Helvetica Neue", Helvetica, sans-serif;
             font-size: 14px;
             color: #333;
-            background-color: #BBB;
+            background-color: #bbb;
         }
     </style>
     <script src="https://d3js.org/d3.v5.min.js"></script>
@@ -25,13 +25,14 @@
         let selectedSensor = 0
         let updateGraph = () => {}
 
-        let projection = d3.geoEquirectangular().center([150.863256445, -34.37642044]).scale(500000)
+        let projection = d3.geoEquirectangular().center([150.8794139, -34.39913333]).scale(500000)
         let path = d3.geoPath().projection(projection)
         let svg = d3.select("body")
             .append("svg")
             .attr("id", "view")
-            .attr("width", 1000)
-            .attr("height", 1000)
+            .attr("width", 900)
+            .attr("height", 750)
+            .style("background-color", "ccc")
 
 
         let margin = {top: 10, right: 30, bottom: 30, left: 60},
@@ -43,6 +44,7 @@
             .attr("id", "tooltip")
             .attr("style", "position: absolute; opacity: 0; z-index: 5; visibility: hidden;")
             .style("background-color", "rgba(200,200,200,0.4")
+            .style("user-select", "none")
             //.style("color", "white")
             
         let graph = tooltip
