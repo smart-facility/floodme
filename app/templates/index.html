@@ -54,6 +54,22 @@
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
 
 
+        let handleZoom = () => {
+            svg.selectAll("g")
+                .attr("transform", d3.event.transform)
+        }
+        
+        let zoom = d3.zoom()
+            .on("zoom", handleZoom)
+
+        
+        let initZoom = () => {
+            svg.call(zoom)
+        }
+
+        initZoom()
+
+
         fetch(api_endpoint+"catchment").then(response => {
             response.json().then(json => {
                 svg.append("g")
