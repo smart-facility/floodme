@@ -10,7 +10,7 @@
             font-family: "Helvetica Neue", Helvetica, sans-serif;
             font-size: 14px;
             color: #333;
-            background-color: #bbb;
+            background-color: #BBB;
         }
     </style>
     <script src="https://d3js.org/d3.v5.min.js"></script>
@@ -18,20 +18,28 @@
 </head>
 <body>
     <h1>Floodaware Dashboard</h1>
-    <svg id="view" width="1000" height="1000"></svg>
     
       <script>
-	let api_endpoint = window.location.href+"api/"
         let projection = d3.geoEquirectangular().center([150.863256445, -34.37642044]).scale(500000)
         let path = d3.geoPath().projection(projection)
-        let svg = d3.select("svg#view")
+        let svg = d3.select("body")
+            .append("svg")
+            .attr("id", "view")
+            .attr("width", 1000)
+            .attr("height", 1000)
+
+        let graph = d3.select("body")
+            .append("svg")
+            .attr("id", "graph")
+            .attr("width", 500)
+            .attr("height", 500)
 
         tooltip = d3.select("body").append("div")
             .attr("id", "tooltip")
             .attr("style", "position: absolute; opacity: 0; z-index: 5;")
             .style("color", "white")
 
-        fetch(api_endpoint+"catchment").then(response => {
+        fetch("http://localhost:5000/api/catchment").then(response => {
             response.json().then(json => {
                 svg.append("g")
                     .attr("id", "catchment")
@@ -44,7 +52,7 @@
             })
         })
 
-        fetch(api_endpoint+"rainfall").then(response => {
+        fetch("http://localhost:5000/api/rainfall").then(response => {
             response.json().then(json => {
                 svg.append("g")
                     .attr("id", "rainfall")
@@ -59,7 +67,7 @@
             })
         })
 
-        fetch(api_endpoint+"sensors").then(response => {
+        fetch("http://localhost:5000/api/sensors").then(response => {
             response.json().then(json => {
                 svg.append("g")
                     .attr("id", "sensors")
@@ -86,7 +94,7 @@
         setTimeout(() => {
             d3.select("#catchment").lower().lower()
             d3.select("#sensors").raise().raise()   
-        }, 750)
+        }, 3000)
         
         
     </script>
