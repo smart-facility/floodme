@@ -17,9 +17,7 @@
     
 </head>
 <body>
-    <h1>Floodaware Dashboard</h1>
-    
-    
+    <h1>Floodaware Dashboard</h1>    
 </body>
 <script>
     let api_endpoint = window.location.href+"api/"
@@ -123,46 +121,42 @@
             })
     }
 
-    init = async () => {
-        let state = {}
-        let fetchCatchment = () => fetch(api_endpoint+"catchment").then(response => response.json())
-        let fetchRainfall = () => fetch(api_endpoint+"rainfall?startdate=20200207_1800&enddate=20200207_1801").then(response => response.json())
-        let fetchSensors = () => fetch(api_endpoint+"sensors").then(response => response.json())
-        Promise.all([fetchCatchment(), fetchRainfall(), fetchSensors()]).then(([catchment, rainfall, sensors]) => {
-            createCatchment(catchment.features)
-            createSensors(sensors.features)
-            createRainfall(rainfall.features)
-               
-        })            
-    }
+    createGraph = data => {
+        let stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
+        data.forEach(d => {
+            d.stamp = stringtodate(d.stamp)
+        })
 
-    init()
+        dataselected = data.filter(d => d.id == 25)
+        
+        let x = d3.scaleTime()
+            .domain(d3.extent(data, d => d.stamp))
+            .range([ 0, width ]);
+        graph.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x));
 
-    fetch(api_endpoint+"sensors/data?startdate=20200207&enddate=20200208").then(response => {
-        response.json().then(json => {
-            let stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
-            data = json.features
-            data.forEach(d => {
-                d.stamp = stringtodate(d.stamp)
-            })
+        let y = d3.scaleLinear()
+            .domain([0, d3.max(data, d => +d.level)])
+            .range([ height, 0 ]);
+        graph.append("g")
+            .call(d3.axisLeft(y));
 
-            dataselected = data.filter(d => d.id == 25)
+        graph.append("path")
+            .attr("id", "data")
+            .datum(dataselected)
+            .attr("fill", "none")
+            .attr("stroke", "steelblue")
+            .attr("stroke-width", 1.5)
+            .attr("d", d3.line()
+                .x(d => x(d.stamp))
+                .y(d => y(d.level))
+                )
+
+        updateGraph = () => {
+            dataselected = data.filter(d => d.id == selectedSensor)
             
-            let x = d3.scaleTime()
-                .domain(d3.extent(data, d => d.stamp))
-                .range([ 0, width ]);
-            graph.append("g")
-                .attr("transform", "translate(0," + height + ")")
-                .call(d3.axisBottom(x));
-
-            let y = d3.scaleLinear()
-                .domain([0, d3.max(data, d => +d.level)])
-                .range([ height, 0 ]);
-            graph.append("g")
-                .call(d3.axisLeft(y));
-
-            graph.append("path")
-                .attr("id", "data")
+            updated = graph.select("path#data")
                 .datum(dataselected)
                 .attr("fill", "none")
                 .attr("stroke", "steelblue")
@@ -171,23 +165,27 @@
                     .x(d => x(d.stamp))
                     .y(d => y(d.level))
                     )
+        }
+    }
 
-            updateGraph = () => {
-                tooltip.select("div").attr("text", "WL-Sensor "+selectedSensor)
-                dataselected = data.filter(d => d.id == selectedSensor)
-                
-                updated = graph.select("path#data")
-                    .datum(dataselected)
-                    .attr("fill", "none")
-                    .attr("stroke", "steelblue")
-                    .attr("stroke-width", 1.5)
-                    .attr("d", d3.line()
-                        .x(d => x(d.stamp))
-                        .y(d => y(d.level))
-                        )
-
-             }
+    init = async () => {
+        let state = {}
+        let fetchCatchment = () => fetch(api_endpoint+"catchment").then(response => response.json())
+        let fetchRainfall = () => fetch(api_endpoint+"rainfall?startdate=20200207_1800&enddate=20200207_1801").then(response => response.json())
+        let fetchSensors = () => fetch(api_endpoint+"sensors").then(response => response.json())
+        await Promise.all([fetchCatchment(), fetchSensors()]).then(([catchment, sensors]) => {
+            state.sensors = sensors
+            state.catchment = catchment
+            createCatchment(catchment.features)
+            createSensors(sensors.features)               
         })
-    })   
+        fetchRainfall().then(json => {
+            state.rainfall = json
+            createRainfall(json.features)
+        })
+        fetch(api_endpoint+"sensors/data?startdate=20200207&enddate=20200208").then(response => response.json()).then(json => createGraph(json.features))
+    }
+
+    init()
 </script>
 </html>
