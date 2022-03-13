@@ -19,139 +19,164 @@
 <body>
     <h1>Floodaware Dashboard</h1>
     
-      <script>
-        let api_endpoint = window.location.href+"api/"
+    
+</body>
+<script>
+    let api_endpoint = window.location.href+"api/"
 
-        let selectedSensor = 0
-        let updateGraph = () => {}
+    let selectedSensor = 0
+    let updateGraph = () => {}
 
-        let projection = d3.geoEquirectangular().center([150.8794139, -34.39913333]).scale(500000)
-        let path = d3.geoPath().projection(projection)
-        let svg = d3.select("body")
-            .append("svg")
-            .attr("id", "view")
-            .attr("width", 900)
-            .attr("height", 750)
-            .style("background-color", "ccc")
+    let projection = d3.geoEquirectangular().center([150.8794139, -34.39913333]).scale(500000)
+    let path = d3.geoPath().projection(projection)
+    let svg = d3.select("body")
+        .append("svg")
+        .attr("id", "view")
+        .attr("width", 900)
+        .attr("height", 750)
+        .style("background-color", "ccc")
 
 
-        let margin = {top: 10, right: 30, bottom: 30, left: 60},
-            width = 360 - margin.left - margin.right,
-            height = 260 - margin.top - margin.bottom;
+    let margin = {top: 10, right: 30, bottom: 30, left: 60},
+        width = 360 - margin.left - margin.right,
+        height = 260 - margin.top - margin.bottom;
 
+    
+    tooltip = d3.select("body").append("div")
+        .attr("id", "tooltip")
+        .attr("style", "position: absolute; opacity: 0; z-index: 5; visibility: hidden;")
+        .style("color", "white")
+        .style("background-color", "rgba(50,50,50,0.8")
+        .style("user-select", "none")
+    
+    
         
-        tooltip = d3.select("body").append("div")
-            .attr("id", "tooltip")
-            .attr("style", "position: absolute; opacity: 0; z-index: 5; visibility: hidden;")
-            .style("color", "white")
-            .style("background-color", "rgba(50,50,50,0.8")
-            .style("user-select", "none")
-        
-        
+    let graph = tooltip
+        .append("svg")
+            .attr("id", "graph")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+
+    let handleZoom = () => {
+        svg.selectAll("g")
+            .attr("transform", d3.event.transform)
+    }
+    
+    let zoom = d3.zoom()
+        .on("zoom", handleZoom)
+
+    
+    let initZoom = () => {
+        svg.call(zoom)
+    }
+
+    initZoom()
+
+    createCatchment = data => {
+        svg.append("g")
+            .attr("id", "catchment")
+            .selectAll("path")
+            .data(data)
+            .join("path")
+            .attr("d", path)
+            .style("fill", "green")
+            .style("stroke", "black")
+    }
+
+    createRainfall = data => {
+        svg.append("g")
+            .attr("id", "rainfall")
+            .style("pointer-events", "none")
+            .selectAll("path")
+            .data(data)
+            .join("path")
+            .attr("d", path)
+            .style("fill", d => {
+                return "#0000"+Math.round(d.properties.val*1000+70).toString(16)
+            })
+            .style("opacity", 0.5)
+    }
+
+    createSensors = data => {
+        svg.append("g")
+            .attr("id", "sensors")
+            .selectAll("path")
+            .data(data)
+            .join("path")
+            .attr("d", path)
+            .style("fill", "red")
+            .on("mouseover", d => {
+                selectedSensor = d.properties.id
+                updateGraph()
+                tooltip.transition().duration(200).style("opacity", 1).style("visibility", "visible")//.text(d.properties.id)
+            })
+            .on("mouseout", d => {
+                tooltip.style("opacity", 0).style("visibility", "hidden")
+            })
+            .on("mousemove", d => {
+                tooltip
+                    .style("left", (d3.event.pageX+10)+"px")
+                    .style("top",(d3.event.pageY+10)+"px")
+            })
+    }
+
+    init = async () => {
+        let state = {}
+        let fetchCatchment = () => fetch(api_endpoint+"catchment").then(response => response.json())
+        let fetchRainfall = () => fetch(api_endpoint+"rainfall?startdate=20200207_1800&enddate=20200207_1801").then(response => response.json())
+        let fetchSensors = () => fetch(api_endpoint+"sensors").then(response => response.json())
+        Promise.all([fetchCatchment(), fetchRainfall(), fetchSensors()]).then(([catchment, rainfall, sensors]) => {
+            createCatchment(catchment.features)
+            createSensors(sensors.features)
+            createRainfall(rainfall.features)
+               
+        })            
+    }
+
+    init()
+
+    fetch(api_endpoint+"sensors/data?startdate=20200207&enddate=20200208").then(response => {
+        response.json().then(json => {
+            let stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
+            data = json.features
+            data.forEach(d => {
+                d.stamp = stringtodate(d.stamp)
+            })
+
+            dataselected = data.filter(d => d.id == 25)
             
-        let graph = tooltip
-            .append("svg")
-                .attr("id", "graph")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+            let x = d3.scaleTime()
+                .domain(d3.extent(data, d => d.stamp))
+                .range([ 0, width ]);
+            graph.append("g")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x));
 
+            let y = d3.scaleLinear()
+                .domain([0, d3.max(data, d => +d.level)])
+                .range([ height, 0 ]);
+            graph.append("g")
+                .call(d3.axisLeft(y));
 
-        let handleZoom = () => {
-            svg.selectAll("g")
-                .attr("transform", d3.event.transform)
-        }
-        
-        let zoom = d3.zoom()
-            .on("zoom", handleZoom)
+            graph.append("path")
+                .attr("id", "data")
+                .datum(dataselected)
+                .attr("fill", "none")
+                .attr("stroke", "steelblue")
+                .attr("stroke-width", 1.5)
+                .attr("d", d3.line()
+                    .x(d => x(d.stamp))
+                    .y(d => y(d.level))
+                    )
 
-        
-        let initZoom = () => {
-            svg.call(zoom)
-        }
-
-        initZoom()
-
-        init = async () => {
-            let state = {}
-            let fetchCatchment = () => fetch(api_endpoint+"catchment").then(response => response.json())
-            let fetchRainfall = () => fetch(api_endpoint+"rainfall?startdate=20200207_1800&enddate=20200207_1801").then(response => response.json())
-            let fetchSensors = () => fetch(api_endpoint+"sensors").then(response => response.json())
-            Promise.all([fetchCatchment(), fetchRainfall(), fetchSensors()]).then(([catchment, rainfall, sensors]) => {
-                svg.append("g")
-                .attr("id", "catchment")
-                .selectAll("path")
-                .data(catchment.features)
-                .join("path")
-                .attr("d", path)
-                .style("fill", "green")
-                .style("stroke", "black")
-
-            svg.append("g")
-                .attr("id", "rainfall")
-                .style("pointer-events", "none")
-                .selectAll("path")
-                .data(rainfall.features)
-                .join("path")
-                .attr("d", path)
-                .style("fill", d => {
-                    return "#0000"+Math.round(d.properties.val*1000+70).toString(16)
-                })
-                .style("opacity", 0.5)
-
-            svg.append("g")
-                .attr("id", "sensors")
-                .selectAll("path")
-                .data(sensors.features)
-                .join("path")
-                .attr("d", path)
-                .style("fill", "red")
-                .on("mouseover", d => {
-                    selectedSensor = d.properties.id
-                    updateGraph()
-                    tooltip.transition().duration(200).style("opacity", 1).style("visibility", "visible")//.text(d.properties.id)
-                })
-                .on("mouseout", d => {
-                    tooltip.style("opacity", 0).style("visibility", "hidden")
-                })
-                .on("mousemove", d => {
-                    tooltip
-                        .style("left", (d3.event.pageX+10)+"px")
-                        .style("top",(d3.event.pageY+10)+"px")
-                })
-
+            updateGraph = () => {
+                tooltip.select("div").attr("text", "WL-Sensor "+selectedSensor)
+                dataselected = data.filter(d => d.id == selectedSensor)
                 
-            })            
-        }
-
-        init()
-
-        fetch(api_endpoint+"sensors/data?startdate=20200207&enddate=20200208").then(response => {
-            response.json().then(json => {
-                let stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
-                data = json.features
-                data.forEach(d => {
-                    d.stamp = stringtodate(d.stamp)
-                })
-
-                dataselected = data.filter(d => d.id == 25)
-                
-                let x = d3.scaleTime()
-                    .domain(d3.extent(data, d => d.stamp))
-                    .range([ 0, width ]);
-                graph.append("g")
-                    .attr("transform", "translate(0," + height + ")")
-                    .call(d3.axisBottom(x));
-
-                let y = d3.scaleLinear()
-                    .domain([0, d3.max(data, d => +d.level)])
-                    .range([ height, 0 ]);
-                graph.append("g")
-                    .call(d3.axisLeft(y));
-
-                graph.append("path")
-                    .attr("id", "data")
+                updated = graph.select("path#data")
                     .datum(dataselected)
                     .attr("fill", "none")
                     .attr("stroke", "steelblue")
@@ -161,32 +186,8 @@
                         .y(d => y(d.level))
                         )
 
-                updateGraph = () => {
-                    tooltip.select("div").attr("text", "WL-Sensor "+selectedSensor)
-                    dataselected = data.filter(d => d.id == selectedSensor)
-                    
-                    updated = graph.select("path#data")
-                        .datum(dataselected)
-                        .attr("fill", "none")
-                        .attr("stroke", "steelblue")
-                        .attr("stroke-width", 1.5)
-                        .attr("d", d3.line()
-                            .x(d => x(d.stamp))
-                            .y(d => y(d.level))
-                            )
-
-                 }
-
-
-            })
+             }
         })
-
-        setTimeout(() => {
-            d3.select("#catchment").lower().lower()
-            d3.select("#sensors").raise().raise()   
-        }, 750)
-        
-        
-    </script>
-</body>
+    })   
+</script>
 </html>
