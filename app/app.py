@@ -53,6 +53,29 @@ def rainfall():
     """, {"start": startdate, "end": enddate})
     return jsonify(curs.fetchone()[0])
 
+@app.route("/api/rainfall/avg")
+def rainfall_avg():
+    """a"""
+    startdate = str(request.args["startdate"])
+    enddate = str(request.args["enddate"])
+    curs = conn.cursor()
+    curs.execute("""
+        SELECT json_build_object(
+            'type', 'FeatureCollection',
+            'features', json_agg(t.*)
+        )
+        FROM
+        (SELECT
+        (st_summarystats(
+            st_clip(rast,
+                (SELECT st_expand(st_envelope(st_collect(geom)), 0.01) FROM catchment)
+            )
+        )).mean as avg, stamp FROM rainfall_raster            
+        WHERE stamp BETWEEN %(start)s AND %(end)s) AS t(avg, stamp)
+    """, {"start": startdate, "end": enddate})
+    return jsonify(curs.fetchone()[0])
+
+
 @app.route("/api/sensors")
 def sensors():
     """a"""

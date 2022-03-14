@@ -20,59 +20,6 @@
     <h1>Floodaware Dashboard</h1>    
 </body>
 <script>
-    let api_endpoint = window.location.href+"api/"
-
-    let selectedSensor = 0
-    let updateGraph = () => {}
-
-    let projection = d3.geoEquirectangular().center([150.8794139, -34.39913333]).scale(500000)
-    let path = d3.geoPath().projection(projection)
-    let svg = d3.select("body")
-        .append("svg")
-        .attr("id", "view")
-        .attr("width", 900)
-        .attr("height", 750)
-        .style("background-color", "ccc")
-
-
-    let margin = {top: 10, right: 30, bottom: 30, left: 60},
-        width = 360 - margin.left - margin.right,
-        height = 260 - margin.top - margin.bottom;
-
-    
-    tooltip = d3.select("body").append("div")
-        .attr("id", "tooltip")
-        .attr("style", "position: absolute; opacity: 0; z-index: 5; visibility: hidden;")
-        .style("color", "white")
-        .style("background-color", "rgba(50,50,50,0.8")
-        .style("user-select", "none")
-    
-    
-        
-    let graph = tooltip
-        .append("svg")
-            .attr("id", "graph")
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
-    .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-
-
-    let handleZoom = () => {
-        svg.selectAll("g")
-            .attr("transform", d3.event.transform)
-    }
-    
-    let zoom = d3.zoom()
-        .on("zoom", handleZoom)
-
-    
-    let initZoom = () => {
-        svg.call(zoom)
-    }
-
-    initZoom()
-
     createCatchment = data => {
         svg.append("g")
             .attr("id", "catchment")
@@ -121,7 +68,7 @@
             })
     }
 
-    createGraph = data => {
+    createGraph = (data, graph) => {
         let stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
         data.forEach(d => {
             d.stamp = stringtodate(d.stamp)
@@ -151,7 +98,7 @@
             .attr("d", d3.line()
                 .x(d => x(d.stamp))
                 .y(d => y(d.level))
-                )
+            )
 
         updateGraph = () => {
             dataselected = data.filter(d => d.id == selectedSensor)
@@ -164,16 +111,114 @@
                 .attr("d", d3.line()
                     .x(d => x(d.stamp))
                     .y(d => y(d.level))
-                    )
+                )
         }
     }
+
+    createGraph2 = (data, graph) => {
+        let stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
+        data.forEach(d => {
+            d.stamp = stringtodate(d.stamp)
+        })
+
+        dataselected = data
+        
+        let x = d3.scaleTime()
+            .domain(d3.extent(data, d => d.stamp))
+            .range([ 0, width ]);
+        graph.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x));
+
+        let y = d3.scaleLinear()
+            .domain([0, d3.max(data, d => +d.avg)])
+            .range([ height, 0 ]);
+        graph.append("g")
+            .call(d3.axisLeft(y));
+
+        graph.append("path")
+            .attr("id", "data")
+            .datum(dataselected)
+            .attr("fill", "none")
+            .attr("stroke", "steelblue")
+            .attr("stroke-width", 1.5)
+            .attr("d", d3.line()
+                .x(d => x(d.stamp))
+                .y(d => y(d.avg))
+            )
+            // .on("mouseover", d=> {
+            //     console.log(d)
+            //     console.log(d3.event)
+            // })
+    }
+</script>
+<script>
+    let api_endpoint = window.location.href+"api/"
+
+    let selectedSensor = 0
+    let updateGraph = () => {}
+
+    let projection = d3.geoEquirectangular().center([150.8794139, -34.39913333]).scale(500000)
+    let path = d3.geoPath().projection(projection)
+    let svg = d3.select("body")
+        .append("svg")
+        .attr("id", "view")
+        .attr("width", 900)
+        .attr("height", 750)
+        .style("background-color", "ccc")
+
+
+    let margin = {top: 10, right: 30, bottom: 30, left: 60},
+        width = 360 - margin.left - margin.right,
+        height = 260 - margin.top - margin.bottom;
+
+    
+    tooltip = d3.select("body").append("div")
+        .attr("id", "tooltip")
+        .attr("style", "position: absolute; opacity: 0; z-index: 5; visibility: hidden;")
+        .style("color", "white")
+        .style("background-color", "rgba(50,50,50,0.8")
+        .style("user-select", "none")
+            
+    let graph = tooltip
+        .append("svg")
+            .attr("id", "graph")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+    let handleZoom = () => {
+        svg.selectAll("g")
+            .attr("transform", d3.event.transform)
+    }
+    
+    let zoom = d3.zoom()
+        .on("zoom", handleZoom)
+
+    
+    let initZoom = () => {
+        svg.call(zoom)
+    }
+
+    initZoom()
+
+    let graph2 = d3.select("body")
+        .append("svg")
+            .attr("id", "graph")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+    
 
     init = async () => {
         let state = {}
         let fetchCatchment = () => fetch(api_endpoint+"catchment").then(response => response.json())
         let fetchRainfall = () => fetch(api_endpoint+"rainfall?startdate=20200207_1800&enddate=20200207_1801").then(response => response.json())
         let fetchSensors = () => fetch(api_endpoint+"sensors").then(response => response.json())
-        await Promise.all([fetchCatchment(), fetchSensors()]).then(([catchment, sensors]) => {
+        Promise.all([fetchCatchment(), fetchSensors()]).then(([catchment, sensors]) => {
             state.sensors = sensors
             state.catchment = catchment
             createCatchment(catchment.features)
@@ -183,7 +228,9 @@
             state.rainfall = json
             createRainfall(json.features)
         })
-        fetch(api_endpoint+"sensors/data?startdate=20200207&enddate=20200208").then(response => response.json()).then(json => createGraph(json.features))
+        fetch(api_endpoint+"sensors/data?startdate=20200207&enddate=20200208").then(response => response.json()).then(json => createGraph(json.features, graph))
+        fetch(api_endpoint+"rainfall/avg?startdate=20200207&enddate=20200208").then(response => response.json()).then(json => createGraph2(json.features, graph2))
+        
     }
 
     init()
