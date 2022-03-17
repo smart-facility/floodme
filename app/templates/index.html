@@ -148,9 +148,6 @@
             )
             .on("mouseover", d=> {
                 let date = x.invert(d3.mouse(d3.event.currentTarget)[0])
-                console.log(date)
-
-                //console.log(state)
 
                 cloudsin = state.rainfall.features.map(d => {
                     return {
@@ -163,11 +160,9 @@
                     }
                 })
 
-                newdata = cloudsin.filter(d => {
-                    return (d.properties.stamp-0) <= (date-0)
+                newdata = cloudsin.filter(d => {              
+                    return ((date-1000*60*2.5) <= d.properties.stamp) && (d.properties.stamp <= (date-0+1000*60*2.5))
                 })
-
-                console.log(newdata)
 
                 let update = d3.select("g#rainfall")
                     .selectAll("path")
@@ -179,7 +174,6 @@
                     .append("path")
                     .attr("d", path)
                     .style("fill", d => {
-                        console.log("asdf")
                         return "#0000"+Math.round(d.properties.val*1000+70).toString(16)
                     })
                     .style("opacity", 0.5)
@@ -259,7 +253,7 @@
     init = async () => {
         let state = {}
         let fetchCatchment = () => fetch(api_endpoint+"catchment").then(response => response.json())
-        let fetchRainfall = () => fetch(api_endpoint+"rainfall?startdate=20200207_1800&enddate=20200207_1801").then(response => response.json())
+        let fetchRainfall = () => fetch(api_endpoint+"rainfall?startdate=20200207&enddate=20200208").then(response => response.json())
         let fetchSensors = () => fetch(api_endpoint+"sensors").then(response => response.json())
         Promise.all([fetchCatchment(), fetchSensors()]).then(([catchment, sensors]) => {
             state.sensors = sensors
@@ -273,8 +267,6 @@
         })
         fetch(api_endpoint+"sensors/data?startdate=20200207&enddate=20200208").then(response => response.json()).then(json => createGraph(json.features, graph))
         fetch(api_endpoint+"rainfall/avg?startdate=20200207&enddate=20200208").then(response => response.json()).then(json => createGraph2(json.features, graph2, state))
-
-        console.log(state)
         
     }
 
