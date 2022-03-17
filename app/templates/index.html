@@ -146,7 +146,9 @@
                 .x(d => x(d.stamp))
                 .y(d => y(d.avg))
             )
-            .on("mouseover", d=> {
+            
+        graph
+        .on("mouseover", d=> {
                 let date = x.invert(d3.mouse(d3.event.currentTarget)[0])
 
                 cloudsin = state.rainfall.features.map(d => {
@@ -161,7 +163,7 @@
                 })
 
                 newdata = cloudsin.filter(d => {              
-                    return ((date-1000*60*2.5) <= d.properties.stamp) && (d.properties.stamp <= (date-0+1000*60*2.5))
+                    return ((date-1000*60*1.5) <= d.properties.stamp) && (d.properties.stamp <= (date-0+1000*60*1.5))
                 })
 
                 let update = d3.select("g#rainfall")
@@ -174,10 +176,47 @@
                     .append("path")
                     .attr("d", path)
                     .style("fill", d => {
-                        return "#0000"+Math.round(d.properties.val*1000+70).toString(16)
+                        let mmhr = d.properties.val*3600/300
+                        let colour
+
+                        if (mmhr < 0.02) {
+                            colour = "rgb(0,0,0,0)"
+                        } else if (mmhr < 0.5) {
+                            colour = "white"
+                        } else if (mmhr < 1.5) {
+                            colour = "skyblue"
+                        } else if (mmhr < 2.5) {
+                            colour = "lightblue"
+                        } else if (mmhr < 4) {
+                            colour = "blue"
+                        } else if (mmhr < 6) {
+                            colour = "lightcyan"
+                        } else if (mmhr < 10) {
+                            colour = "cyan"
+                        } else if (mmhr < 15) {
+                            colour = "darkcyan"
+                        } else if (mmhr < 20) {
+                            colour = "yellow"
+                        } else if (mmhr < 35) {
+                            colour = "#ffae42"
+                        } else if (mmhr < 50) {
+                            colour = "orange"
+                        } else if (mmhr < 80) {
+                            colour = "orangered"
+                        } else if (mmhr < 120) {
+                            colour = "red"
+                        } else if (mmhr < 200) {
+                            colour = "darkred"
+                        } else if (mmhr < 300) {
+                            colour = "maroon"
+                        } else if (mmhr < 10000) {
+                            colour = "#654321"
+                        }
+                        return colour
                     })
                     .style("opacity", 0.5)
 
+                
                 // .selectAll("path")
                 // .data(data)
                 // .join("path")
@@ -267,6 +306,8 @@
         })
         fetch(api_endpoint+"sensors/data?startdate=20200207&enddate=20200208").then(response => response.json()).then(json => createGraph(json.features, graph))
         fetch(api_endpoint+"rainfall/avg?startdate=20200207&enddate=20200208").then(response => response.json()).then(json => createGraph2(json.features, graph2, state))
+
+        console.log(state)
         
     }
 
