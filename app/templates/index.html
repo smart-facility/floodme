@@ -151,6 +151,8 @@
         .on("mouseover", d=> {
                 let date = x.invert(d3.mouse(d3.event.currentTarget)[0])
 
+                let bisect = d3.bisector(function(d) { return d.properties.stamp; }).left
+                
                 cloudsin = state.rainfall.features.map(d => {
                     return {
                         properties:{
@@ -175,46 +177,48 @@
                 update.enter()
                     .append("path")
                     .attr("d", path)
-                    .style("fill", d => {
-                        let mmhr = d.properties.val*3600/300
-                        let colour
+                    
+                d3.select("g#rainfall").selectAll("path")
+                .style("fill", d => {
+                    let mmhr = d.properties.val*3600/300
+                    let colour
 
-                        if (mmhr < 0.02) {
-                            colour = "rgb(0,0,0,0)"
-                        } else if (mmhr < 0.5) {
-                            colour = "white"
-                        } else if (mmhr < 1.5) {
-                            colour = "skyblue"
-                        } else if (mmhr < 2.5) {
-                            colour = "lightblue"
-                        } else if (mmhr < 4) {
-                            colour = "blue"
-                        } else if (mmhr < 6) {
-                            colour = "lightcyan"
-                        } else if (mmhr < 10) {
-                            colour = "cyan"
-                        } else if (mmhr < 15) {
-                            colour = "darkcyan"
-                        } else if (mmhr < 20) {
-                            colour = "yellow"
-                        } else if (mmhr < 35) {
-                            colour = "#ffae42"
-                        } else if (mmhr < 50) {
-                            colour = "orange"
-                        } else if (mmhr < 80) {
-                            colour = "orangered"
-                        } else if (mmhr < 120) {
-                            colour = "red"
-                        } else if (mmhr < 200) {
-                            colour = "darkred"
-                        } else if (mmhr < 300) {
-                            colour = "maroon"
-                        } else if (mmhr < 10000) {
-                            colour = "#654321"
-                        }
-                        return colour
-                    })
-                    .style("opacity", 0.5)
+                    if (mmhr < 0.02) {
+                        colour = "rgb(0,0,0,0)"
+                    } else if (mmhr < 0.5) {
+                        colour = "white"
+                    } else if (mmhr < 1.5) {
+                        colour = "skyblue"
+                    } else if (mmhr < 2.5) {
+                        colour = "lightblue"
+                    } else if (mmhr < 4) {
+                        colour = "blue"
+                    } else if (mmhr < 6) {
+                        colour = "lightcyan"
+                    } else if (mmhr < 10) {
+                        colour = "cyan"
+                    } else if (mmhr < 15) {
+                        colour = "darkcyan"
+                    } else if (mmhr < 20) {
+                        colour = "yellow"
+                    } else if (mmhr < 35) {
+                        colour = "#ffae42"
+                    } else if (mmhr < 50) {
+                        colour = "orange"
+                    } else if (mmhr < 80) {
+                        colour = "orangered"
+                    } else if (mmhr < 120) {
+                        colour = "red"
+                    } else if (mmhr < 200) {
+                        colour = "darkred"
+                    } else if (mmhr < 300) {
+                        colour = "maroon"
+                    } else if (mmhr < 10000) {
+                        colour = "#654321"
+                    }
+                    return colour
+                })
+                .style("opacity", 0.5)
 
                 
                 // .selectAll("path")
