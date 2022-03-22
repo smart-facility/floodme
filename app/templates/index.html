@@ -296,9 +296,17 @@
     
 
     init = async () => {
+        let liveDate = new Date()
+        let liveDateMinus24h = new Date(liveDate - 1000*60*60*24)
+        let liveStartDate = liveDateMinus24h.toJSON()
+        let liveEndDate = liveDate.toJSON()
+        let eventDate = 20200207
+        let eventDateEnd = 20200208
+        let startDate = liveStartDate
+        let endDate = liveEndDate
         let state = {}
         let fetchCatchment = () => fetch(api_endpoint+"catchment").then(response => response.json())
-        let fetchRainfall = () => fetch(api_endpoint+"rainfall?startdate=20200207&enddate=20200208").then(response => response.json())
+        let fetchRainfall = () => fetch(api_endpoint+`rainfall?startdate=${startDate}&enddate=${endDate}`).then(response => response.json())
         let fetchSensors = () => fetch(api_endpoint+"sensors").then(response => response.json())
         Promise.all([fetchCatchment(), fetchSensors()]).then(([catchment, sensors]) => {
             state.sensors = sensors
@@ -310,8 +318,8 @@
             state.rainfall = json
             createRainfall(json.features)
         })
-        fetch(api_endpoint+"sensors/data?startdate=20200207&enddate=20200208").then(response => response.json()).then(json => createGraph(json.features, graph))
-        fetch(api_endpoint+"rainfall/avg?startdate=20200207&enddate=20200208").then(response => response.json()).then(json => createGraph2(json.features, graph2, state))
+        fetch(api_endpoint+`sensors/data?startdate=${startDate}&enddate=${endDate}`).then(response => response.json()).then(json => createGraph(json.features, graph))
+        fetch(api_endpoint+`rainfall/avg?startdate=${startDate}&enddate=${endDate}`).then(response => response.json()).then(json => createGraph2(json.features, graph2, state))
 
         console.log(state)
         
