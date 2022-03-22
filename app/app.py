@@ -108,7 +108,7 @@ def sensors_data():
                 'features', json_agg(t.*)
             )
             FROM
-            (SELECT id, level, stamp FROM sensor_levels WHERE stamp BETWEEN :start AND :end) as t(id, level, stamp)
+            (SELECT id, level, stamp FROM sensor_levels WHERE stamp BETWEEN :start AND :end ORDER BY stamp ASC) as t(id, level, stamp)
         """),{"start": startdate, "end": enddate})
 
         return jsonify(result.all()[0][0])
