@@ -16,7 +16,20 @@ engine = create_engine(f"postgresql://postgres:{pword}@{dbhost}:5432/floodaware"
 @app.route("/")
 def home():
     """a"""
-    return render_template("index.html")
+    islive = False
+    startdate = 20200207
+    enddate = 20200208
+    daysback = 1
+    if "live" in list(request.args):
+        islive = bool(request.args["live"])
+    if "daysback" in list(request.args):
+        daysback = str(request.args["daysback"])
+    if "startdate" in list(request.args):
+        startdate = str(request.args["startdate"])
+    if "enddate" in list(request.args):
+        enddate = str(request.args["enddate"])
+    
+    return render_template("index.html", flaskislive=int(islive), flaskdaysback=daysback, flaskstartdate=startdate, flaskenddate=enddate)
 
 @app.route("/api/catchment")
 def catchment():

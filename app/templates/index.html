@@ -235,7 +235,7 @@
     }
 </script>
 <script>
-    let api_endpoint = window.location.href+"api/"
+    let api_endpoint = window.location.origin+"/api/"
 
     let selectedSensor = 0
     let updateGraph = () => {}
@@ -296,14 +296,25 @@
     
 
     init = async () => {
+        let daysBack = "{{ flaskdaysback }}"
+        let isLive = "{{ flaskislive }}"
         let liveDate = new Date()
-        let liveDateMinus24h = new Date(liveDate - 1000*60*60*24*7)
+        let liveDateMinus24h = new Date(liveDate - 1000*60*60*24*daysBack)
         let liveStartDate = liveDateMinus24h.toJSON()
         let liveEndDate = liveDate.toJSON()
         let eventDate = 20200207
         let eventDateEnd = 20200208
-        let startDate = liveStartDate
-        let endDate = liveEndDate
+
+        let startDate, endDate
+
+        if (isLive == 1) {
+            startDate = liveStartDate
+            endDate = liveEndDate
+        } else {
+            startDate = "{{ flaskstartdate }}"
+            endDate = "{{ flaskenddate }}"
+        }
+
         let state = {}
         let fetchCatchment = () => fetch(api_endpoint+"catchment").then(response => response.json())
         let fetchRainfall = () => fetch(api_endpoint+`rainfall?startdate=${startDate}&enddate=${endDate}`).then(response => response.json())
