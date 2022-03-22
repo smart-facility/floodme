@@ -147,12 +147,14 @@
                 .y(d => y(d.avg))
             )
             
-        graph
-        .on("mouseover", d=> {
+        graph.append("rect")
+            .style("fill", "none")
+            .style("pointer-events", "all")
+            .attr("width", width)
+            .attr("height", height)
+        .on("mousemove", d=> {
                 let date = x.invert(d3.mouse(d3.event.currentTarget)[0])
 
-                let bisect = d3.bisector(function(d) { return d.properties.stamp; }).left
-                
                 cloudsin = state.rainfall.features.map(d => {
                     return {
                         properties:{
@@ -165,7 +167,7 @@
                 })
 
                 newdata = cloudsin.filter(d => {              
-                    return ((date-1000*60*1.5) <= d.properties.stamp) && (d.properties.stamp <= (date-0+1000*60*1.5))
+                    return ((date-1000*60*2.5) <= d.properties.stamp) && (d.properties.stamp <= (date-0+1000*60*2.5))
                 })
 
                 let update = d3.select("g#rainfall")
