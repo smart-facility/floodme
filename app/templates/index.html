@@ -115,7 +115,7 @@
         }
     }
 
-    createGraph2 = (data, graph) => {
+    createGraph2 = (data, graph, state) => {
         let stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
         data.forEach(d => {
             d.stamp = stringtodate(d.stamp)
@@ -146,10 +146,90 @@
                 .x(d => x(d.stamp))
                 .y(d => y(d.avg))
             )
-            // .on("mouseover", d=> {
-            //     console.log(d)
-            //     console.log(d3.event)
-            // })
+            
+        graph
+        .on("mouseover", d=> {
+                let date = x.invert(d3.mouse(d3.event.currentTarget)[0])
+
+                let bisect = d3.bisector(function(d) { return d.properties.stamp; }).left
+                
+                cloudsin = state.rainfall.features.map(d => {
+                    return {
+                        properties:{
+                            stamp: stringtodate(d.properties.stamp),
+                            val: d.properties.val
+                        },
+                        geometry: d.geometry,
+                        type: "Feature"
+                    }
+                })
+
+                newdata = cloudsin.filter(d => {              
+                    return ((date-1000*60*1.5) <= d.properties.stamp) && (d.properties.stamp <= (date-0+1000*60*1.5))
+                })
+
+                let update = d3.select("g#rainfall")
+                    .selectAll("path")
+                    .data(newdata)
+
+                update.exit().remove()
+
+                update.enter()
+                    .append("path")
+                    .attr("d", path)
+                    
+                d3.select("g#rainfall").selectAll("path")
+                .style("fill", d => {
+                    let mmhr = d.properties.val*3600/300
+                    let colour
+
+                    if (mmhr < 0.02) {
+                        colour = "rgb(0,0,0,0)"
+                    } else if (mmhr < 0.5) {
+                        colour = "white"
+                    } else if (mmhr < 1.5) {
+                        colour = "skyblue"
+                    } else if (mmhr < 2.5) {
+                        colour = "lightblue"
+                    } else if (mmhr < 4) {
+                        colour = "blue"
+                    } else if (mmhr < 6) {
+                        colour = "lightcyan"
+                    } else if (mmhr < 10) {
+                        colour = "cyan"
+                    } else if (mmhr < 15) {
+                        colour = "darkcyan"
+                    } else if (mmhr < 20) {
+                        colour = "yellow"
+                    } else if (mmhr < 35) {
+                        colour = "#ffae42"
+                    } else if (mmhr < 50) {
+                        colour = "orange"
+                    } else if (mmhr < 80) {
+                        colour = "orangered"
+                    } else if (mmhr < 120) {
+                        colour = "red"
+                    } else if (mmhr < 200) {
+                        colour = "darkred"
+                    } else if (mmhr < 300) {
+                        colour = "maroon"
+                    } else if (mmhr < 10000) {
+                        colour = "#654321"
+                    }
+                    return colour
+                })
+                .style("opacity", 0.5)
+
+                
+                // .selectAll("path")
+                // .data(data)
+                // .join("path")
+                // .attr("d", path)
+                // .style("fill", d => {
+                //     return "#0000"+Math.round(d.properties.val*1000+70).toString(16)
+                // })
+                // .style("opacity", 0.5)
+            })
     }
 </script>
 <script>
@@ -216,7 +296,7 @@
     init = async () => {
         let state = {}
         let fetchCatchment = () => fetch(api_endpoint+"catchment").then(response => response.json())
-        let fetchRainfall = () => fetch(api_endpoint+"rainfall?startdate=20200207_1800&enddate=20200207_1801").then(response => response.json())
+        let fetchRainfall = () => fetch(api_endpoint+"rainfall?startdate=20200207&enddate=20200208").then(response => response.json())
         let fetchSensors = () => fetch(api_endpoint+"sensors").then(response => response.json())
         Promise.all([fetchCatchment(), fetchSensors()]).then(([catchment, sensors]) => {
             state.sensors = sensors
@@ -229,7 +309,9 @@
             createRainfall(json.features)
         })
         fetch(api_endpoint+"sensors/data?startdate=20200207&enddate=20200208").then(response => response.json()).then(json => createGraph(json.features, graph))
-        fetch(api_endpoint+"rainfall/avg?startdate=20200207&enddate=20200208").then(response => response.json()).then(json => createGraph2(json.features, graph2))
+        fetch(api_endpoint+"rainfall/avg?startdate=20200207&enddate=20200208").then(response => response.json()).then(json => createGraph2(json.features, graph2, state))
+
+        console.log(state)
         
     }
 
