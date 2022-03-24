@@ -68,13 +68,20 @@
             })
     }
 
-    createGraph = (data, graph) => {
+    createGraph = (data, graph, state) => {
         let stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
         data.forEach(d => {
             d.stamp = stringtodate(d.stamp)
         })
 
         data = data.filter(d => d.level < 5000)
+
+        temp = state.sensors.features.map(d => [d.properties.id, d.properties.ahd])
+        ahds = Object.fromEntries(temp)
+
+        data.forEach(d => {
+            d.level = ahds[d.id] - d.level/1000
+        })
 
         dataselected = data.filter(d => d.id == 25)
         
@@ -318,14 +325,11 @@
             endDate = "{{ flaskenddate }}"
         }
 
-        console.log(startDate)
-        console.log(endDate)
-
         let state = {}
         let fetchCatchment = () => fetch(api_endpoint+"catchment").then(response => response.json())
         let fetchRainfall = () => fetch(api_endpoint+`rainfall?startdate=${startDate}&enddate=${endDate}`).then(response => response.json())
         let fetchSensors = () => fetch(api_endpoint+"sensors").then(response => response.json())
-        Promise.all([fetchCatchment(), fetchSensors()]).then(([catchment, sensors]) => {
+        await Promise.all([fetchCatchment(), fetchSensors()]).then(([catchment, sensors]) => {
             state.sensors = sensors
             state.catchment = catchment
             createCatchment(catchment.features)
@@ -335,7 +339,7 @@
             state.rainfall = json
             createRainfall(json.features)
         })
-        fetch(api_endpoint+`sensors/data?startdate=${startDate}&enddate=${endDate}`).then(response => response.json()).then(json => createGraph(json.features, graph))
+        fetch(api_endpoint+`sensors/data?startdate=${startDate}&enddate=${endDate}`).then(response => response.json()).then(json => createGraph(json.features, graph, state))
         fetch(api_endpoint+`rainfall/avg?startdate=${startDate}&enddate=${endDate}`).then(response => response.json()).then(json => createGraph2(json.features, graph2, state))
 
         console.log(state)
