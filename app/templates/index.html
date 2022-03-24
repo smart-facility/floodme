@@ -89,6 +89,7 @@
             .domain(d3.extent(data, d => d.stamp))
             .range([ 0, width ]);
         graph.append("g")
+            .attr("id", "xaxis")
             .attr("transform", "translate(0," + height + ")")
             .call(d3.axisBottom(x));
 
@@ -96,6 +97,7 @@
             .domain([0, d3.max(data, d => +d.level)])
             .range([ height, 0 ]);
         graph.append("g")
+            .attr("id", "yaxis")
             .call(d3.axisLeft(y));
 
         graph.append("path")
@@ -111,6 +113,13 @@
 
         updateGraph = () => {
             dataselected = data.filter(d => d.id == selectedSensor)
+
+            y = d3.scaleLinear()
+                .domain([d3.min(dataselected, d => +d.level)-0.5, d3.max(dataselected, d => +d.level)+0.5])
+                .range([ height, 0 ])
+            
+            d3.selectAll("g #yaxis")
+                .call(d3.axisLeft(y))
             
             updated = graph.select("path#data")
                 .datum(dataselected)
