@@ -137,6 +137,7 @@
         let stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
         data.forEach(d => {
             d.stamp = stringtodate(d.stamp)
+            d.avg = (d.avg/300)*3600
         })
 
         dataselected = data
