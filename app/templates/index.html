@@ -299,6 +299,7 @@
         let daysBack = "{{ flaskdaysback }}"
         let isLive = "{{ flaskislive }}"
         let liveDate = new Date()
+        liveDate.setHours(liveDate.getHours()+(liveDate.getTimezoneOffset()/-60))
         let liveDateMinus24h = new Date(liveDate - 1000*60*60*24*daysBack)
         let liveStartDate = liveDateMinus24h.toJSON()
         let liveEndDate = liveDate.toJSON()
@@ -314,6 +315,9 @@
             startDate = "{{ flaskstartdate }}"
             endDate = "{{ flaskenddate }}"
         }
+
+        console.log(startDate)
+        console.log(endDate)
 
         let state = {}
         let fetchCatchment = () => fetch(api_endpoint+"catchment").then(response => response.json())
