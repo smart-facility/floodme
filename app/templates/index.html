@@ -74,6 +74,8 @@
             d.stamp = stringtodate(d.stamp)
         })
 
+        data = data.filter(d => d.level < 5000)
+
         dataselected = data.filter(d => d.id == 25)
         
         let x = d3.scaleTime()
