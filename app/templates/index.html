@@ -126,6 +126,15 @@
                 .x(d => x(d.stamp))
                 .y(d => y(d.level))
             )
+        
+        graph.append("text")
+            .attr("class", "y label")
+            .attr("text-anchor", "end")
+            .attr("y", 6)
+            .attr("dy", "-3em")
+            .attr("fill", "white")
+            .attr("transform", "rotate(-90)")
+            .text("Water Level Sensor Reading (mAHD)")
 
         updateGraph = () => {
             dataselected = data.filter(d => d.id == selectedSensor)
@@ -181,6 +190,15 @@
                 .x(d => x(d.stamp))
                 .y(d => y(d.avg))
             )
+
+        graph.append("text")
+            .attr("class", "y label")
+            .attr("text-anchor", "end")
+            .attr("y", 6)
+            .attr("dy", "-3em")
+            .attr("transform", "rotate(-90)")
+            .text("BOM Average Rainfall (mm/hr)")
+
             
         graph.append("rect")
             .style("fill", "none")
