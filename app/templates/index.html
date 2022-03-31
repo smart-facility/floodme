@@ -314,6 +314,7 @@
         .style("color", "white")
         .style("background-color", "rgba(50,50,50,0.8")
         .style("user-select", "none")
+        .style("pointer-events", "none")
             
     let graph = tooltip
         .append("svg")
@@ -386,6 +387,29 @@
         fetch(api_endpoint+`sensors/data?startdate=${startDate}&enddate=${endDate}`).then(response => response.json()).then(json => createGraph(json.features, graph, state))
         fetch(api_endpoint+`rainfall/avg?startdate=${startDate}&enddate=${endDate}`).then(response => response.json()).then(json => createGraph2(json.features, graph2, state))
 
+        if (isLive == 0) {
+            fetch(api_endpoint+`hotspots/dummy?sensors=[15,5]&level=0.5`).then(response => response.json().then(json => {
+                svg.append("g")
+                    .attr("id", "hotspot")
+                    .selectAll("path")
+                    .data(json.hotspots.features)
+                    .join("path")
+                    .attr("d", path)
+                    .style("fill", "yellow")
+                    .style("opacity", 0.5)
+                    .style("pointer-events", "none")
+
+                svg.append("g")
+                    .attr("id", "properties")
+                    .selectAll("path")
+                    .data(json.properties.features)
+                    .join("path")
+                    .attr("d", path.pointRadius(1.5))
+                    .style("fill", "darkred")
+                    .style("pointer-events", "none")
+            }))
+        }
+        
         console.log(state)
         
     }

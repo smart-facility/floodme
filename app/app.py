@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from sqlalchemy import create_engine, text
-import os
+import os, json
 
 dbhost = os.environ.get("DBHOST")
 pword = os.environ.get("DBPWORD")
@@ -125,6 +125,40 @@ def sensors_data():
         """),{"start": startdate, "end": enddate})
 
         return jsonify(result.all()[0][0])
+
+@app.route("/api/hotspots/dummy")
+def hotspot():
+    """a"""
+    sensors = tuple(json.loads(request.args["sensors"]))
+    level = request.args["level"]
+
+    with engine.connect() as conn:
+        result = conn.execute(text("""
+            WITH flood_areas AS (SELECT id, AHD, st_buffer(geom, 0.003) AS geom FROM sensors WHERE id IN :sensors),
+            props AS (SELECT bc_id, ground_level, floor_level - ground_level AS floor_height, geom FROM properties)
+            SELECT json_build_object(
+                'type', 'FeatureCollection',
+                'features', json_agg(st_asgeojson(t.*)::json)
+            )
+            FROM
+            (SELECT bc_id, ground_level, geom FROM props WHERE st_contains((SELECT st_collect(geom) FROM flood_areas), geom) AND floor_height < :level) AS t
+        """),{"sensors": sensors, "level": level})
+
+    properties = result.all()[0][0]
+
+    with engine.connect() as conn:
+        result = conn.execute(text("""
+            SELECT json_build_object(
+                'type', 'FeatureCollection',
+                'features', json_agg(st_asgeojson(t.*)::json)
+            )
+            FROM
+            (SELECT id, AHD, st_buffer(geom, 0.003) AS geom FROM sensors WHERE id IN :sensors) AS t
+        """), {"sensors": sensors})
+
+    hotspots = result.all()[0][0]
+
+    return jsonify({"properties": properties, "hotspots": hotspots})
 
 
 if (__name__ == "__main__"):
