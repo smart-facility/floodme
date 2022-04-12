@@ -31,6 +31,11 @@ def home():
     
     return render_template("index.html", flaskislive=int(islive), flaskdaysback=daysback, flaskstartdate=startdate, flaskenddate=enddate)
 
+@app.route("/mb")
+def map():
+    """a"""
+    return render_template("map.html")
+
 @app.route("/api/catchment")
 def catchment():
     """a"""

@@ -1,0 +1,72 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src="https://cdn.maptiler.com/mapbox-gl-js/v1.13.2/mapbox-gl.js"></script>
+  <link href="https://cdn.maptiler.com/mapbox-gl-js/v1.13.2/mapbox-gl.css" rel="stylesheet" />
+  <style>
+    #map {position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 0;}
+    svg {position: absolute; z-index: 2; }
+  </style>
+</head>
+<body>
+  <div id="map">
+  </div>
+  <script>
+    // You can remove the following line if you don't need support for RTL (right-to-left) labels:
+    //mapboxgl.setRTLTextPlugin('https://cdn.maptiler.com/mapbox-gl-js/plugins/mapbox-gl-rtl-text/v0.2.3/mapbox-gl-rtl-text.js');
+    let map = new mapboxgl.Map({
+      container: 'map',
+      style: 'https://api.maptiler.com/maps/topo/style.json?key=TGgOfxJrRHJvzjeiOdhm',
+      center: [150.88,-34.4],
+      zoom: 13.3,
+      maxBounds: [
+          [150.79,-34.49],
+          [150.97,-34.32]
+      ]
+    })
+    
+    let container = map.getCanvasContainer()
+    let svg = d3
+    	.select(container)
+        .append("svg")
+        .attr("height", "100%")
+        .attr("width", "100%")
+
+    function projectPoint(lon, lat) {
+        let point = map.project(new mapboxgl.LngLat(lon, lat));
+		this.stream.point(point.x, point.y);
+	}
+    
+    let transform = d3.geoTransform({point: projectPoint})
+    let path = d3.geoPath().projection(transform)
+
+
+    fetch("http://localhost:5000/api/catchment").then(response => response.json().then(json => {
+        let catchment = svg.selectAll("path")
+            .data(json.features)
+            .join("path")
+            .attr("d", path)
+            .style("fill", "green")
+            .style("fill-opacity", 0.4)
+            .style("stroke", "black")
+            .style("stroke-opacity", 0.2)
+            
+
+        function update() {
+            //console.log("update")
+            catchment.attr("d", path)
+        }
+
+        map.on("move", update)
+
+        // svg.raise()
+        // catchment.raise()
+        // svg.raise()
+        // catchment.raise()
+    }))
+  </script>
+</body>
+</html>
