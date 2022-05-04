@@ -4,6 +4,8 @@
 <head>
   <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
   <script src="https://d3js.org/d3.v5.min.js"></script>
+  <!-- <script src='https://api.mapbox.com/mapbox-gl-js/v2.7.0/mapbox-gl.js'></script>
+  <link href='https://api.mapbox.com/mapbox-gl-js/v2.7.0/mapbox-gl.css' rel='stylesheet' /> -->
   <script src="https://cdn.maptiler.com/mapbox-gl-js/v1.13.2/mapbox-gl.js"></script>
   <link href="https://cdn.maptiler.com/mapbox-gl-js/v1.13.2/mapbox-gl.css" rel="stylesheet" />
   <style>
@@ -15,58 +17,181 @@
   <div id="map">
   </div>
   <script>
+    // mapboxgl.accessToken = 'pk.eyJ1IjoibmF0b2h1dGNoIiwiYSI6ImNsMW85cmxsbjEyZTQzYnM5ZXhvdm53MHoifQ.7tChnQlrKf5gGk-ATFiPGg'
     // You can remove the following line if you don't need support for RTL (right-to-left) labels:
     //mapboxgl.setRTLTextPlugin('https://cdn.maptiler.com/mapbox-gl-js/plugins/mapbox-gl-rtl-text/v0.2.3/mapbox-gl-rtl-text.js');
     let map = new mapboxgl.Map({
       container: 'map',
       style: 'https://api.maptiler.com/maps/topo/style.json?key=TGgOfxJrRHJvzjeiOdhm',
+      //style: 'mapbox://styles/natohutch/cl1vptxmu000i16pnii0nk61a',
       center: [150.88,-34.4],
       zoom: 13.3,
       maxBounds: [
-          [150.79,-34.49],
-          [150.97,-34.32]
+          [150.73,-34.49],
+          [151,-34.32]
       ]
     })
+
+    let api_endpoint = window.location.origin+"/api/"
+
     
-    let container = map.getCanvasContainer()
-    let svg = d3
-    	.select(container)
-        .append("svg")
-        .attr("height", "100%")
-        .attr("width", "100%")
+    map.on("load", () => {
+      map.addSource("hotspots", {
+        type: "geojson",
+        data: api_endpoint+"hotspots"
+      })
 
-    function projectPoint(lon, lat) {
-        let point = map.project(new mapboxgl.LngLat(lon, lat));
-		this.stream.point(point.x, point.y);
-	}
+      map.addSource("catchment", {
+        type: "geojson",
+        data: api_endpoint+"catchment"
+      })
+
+      map.addSource("sensors", {
+        type: "geojson",
+        data: api_endpoint+"sensors"
+      })
+
+      map.addLayer({
+        "id": "catchment",
+        "type": "fill",
+        "source": "catchment",
+        "paint": {
+          "fill-color": "green",
+          "fill-opacity": 0.11,
+          "fill-outline-color": "darkgreen"
+        }
+      })
+
+      map.addLayer({
+        "id": "catchment-outline",
+        "type": "line",
+        "source": "catchment",
+        "paint": {
+          "line-color": "darkgreen",
+          "line-width": 2,
+          "line-opacity": 0.4,
+        }
+      })
+
+      // let target = map.getStyle().layers[15]
+      // map.moveLayer("catchment", target.id)
+      // map.moveLayer("catchment-outline", target.id)
+
+
+      map.addLayer({
+        "id": "hotspots",
+        "type": "circle",
+        "source": "hotspots",
+        "paint": {
+          "circle-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "flood_depth"],
+            -0.5,
+            "yellow",
+            0,
+            "orange",
+            3,
+            "red",
+            6,
+            "darkred",
+            10,
+            "black"
+          ],
+          "circle-radius": 4
+        }
+      })
+
+      map.addControl(new mapboxgl.NavigationControl())
+
+      map.loadImage(
+        "level_sensor.png",
+        (error, image) => {
+          if (error) throw error
+          map.addImage("level_sensor", image, {sdf: false})
+
+          map.addLayer({
+            "id": "sensors",
+            "type": "symbol",
+            "source": "sensors",
+            "layout": {
+              "icon-image": "level_sensor",
+              "icon-size": 0.05,
+              "icon-allow-overlap": true,
+            },
+            "paint": {
+              "icon-color": "blue"
+            }
+          })
+        }
+      )
+    })
+      
+
     
-    let transform = d3.geoTransform({point: projectPoint})
-    let path = d3.geoPath().projection(transform)
+
+    // map.on('load', () => {
+    //     map.addSource('mapbox-dem', {
+    //         'type': 'raster-dem',
+    //         'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
+    //         'tileSize': 512,
+    //         'maxzoom': 14
+    //     });
+    //     // add the DEM source as a terrain layer with exaggerated height
+    //     map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1 });
+        
+    //     // add a sky layer that will show when the map is highly pitched
+    //     map.addLayer({
+    //         'id': 'sky',
+    //         'type': 'sky',
+    //         'paint': {
+    //         'sky-type': 'atmosphere',
+    //         'sky-atmosphere-sun': [0.0, 0.0],
+    //         'sky-atmosphere-sun-intensity': 15
+    //     }
+    //     });
+    // });
+    
+    // let container = map.getCanvasContainer()
+    // let svg = d3
+    // 	.select("body")
+    //     .append("svg")
+    //     .style("pointer-events", "none")
+    //     .attr("height", "100%")
+    //     .attr("width", "100%")
+
+    // function projectPoint(lon, lat) {
+    //     let point = map.project(new mapboxgl.LngLat(lon, lat));
+		// this.stream.point(point.x, point.y);
+	  // }
+    
+    // let transform = d3.geoTransform({point: projectPoint})
+    // let path = d3.geoPath().projection(transform)
 
 
-    fetch("http://localhost:5000/api/catchment").then(response => response.json().then(json => {
-        let catchment = svg.selectAll("path")
-            .data(json.features)
-            .join("path")
-            .attr("d", path)
-            .style("fill", "green")
-            .style("fill-opacity", 0.4)
-            .style("stroke", "black")
-            .style("stroke-opacity", 0.2)
+    // fetch("http://localhost:5000/api/catchment").then(response => response.json().then(json => {
+    //     let catchment = svg.selectAll("path")
+    //         .data(json.features)
+    //         .join("path")
+    //         .attr("d", path)
+    //         .style("fill", "green")
+    //         .style("fill-opacity", 0.4)
+    //         .style("stroke", "black")
+    //         .style("stroke-opacity", 0.2)
             
 
-        function update() {
-            //console.log("update")
-            catchment.attr("d", path)
-        }
+    //     function update() {
+    //         //console.log("update")
+    //         catchment.attr("d", path)
+    //     }
 
-        map.on("move", update)
+    //     map.on("move", update)
 
-        // svg.raise()
-        // catchment.raise()
-        // svg.raise()
-        // catchment.raise()
-    }))
+    //     // svg.raise()
+    //     // catchment.raise()
+    //     // svg.raise()
+    //     // catchment.raise()
+    // }))
   </script>
 </body>
 </html>

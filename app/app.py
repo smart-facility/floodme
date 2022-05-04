@@ -6,12 +6,14 @@ import os, json
 dbhost = os.environ.get("DBHOST")
 pword = os.environ.get("DBPWORD")
 
-app = Flask(__name__)
+app = Flask(__name__,
+            static_url_path="",
+            static_folder="static")
 
 CORS(app)
 
 # conn = psycopg2.connect(database="floodaware", user="postgres", host=dbhost, password=pword)
-engine = create_engine(f"postgresql://postgres:{pword}@{dbhost}:5432/floodaware", echo=True, future=True)
+engine = create_engine(f"postgresql://postgres:{pword}@{dbhost}:5432/floodaware", echo=False, future=True)
 
 @app.route("/")
 def home():
@@ -131,8 +133,25 @@ def sensors_data():
 
         return jsonify(result.all()[0][0])
 
-@app.route("/api/hotspots/dummy")
+@app.route("/api/hotspots")
 def hotspot():
+    """a"""
+    with engine.connect() as conn:
+        result = conn.execute(text("""
+        SELECT json_build_object(
+            'type', 'FeatureCollection',
+            'features', json_agg(st_asgeojson(t.*)::json)
+        )
+        FROM
+        (SELECT st_force2d(geom) AS geom, current_flood_z - floor_z AS flood_depth FROM properties WHERE floor_z - 0.5 < current_flood_z) AS t
+        """))
+
+    return jsonify(result.all()[0][0])
+    
+
+
+@app.route("/api/hotspots/dummy")
+def hotty():
     """a"""
     sensors = tuple(json.loads(request.args["sensors"]))
     level = request.args["level"]

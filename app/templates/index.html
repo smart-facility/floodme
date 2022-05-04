@@ -388,21 +388,11 @@
         fetch(api_endpoint+`rainfall/avg?startdate=${startDate}&enddate=${endDate}`).then(response => response.json()).then(json => createGraph2(json.features, graph2, state))
 
         if (isLive == 0) {
-            fetch(api_endpoint+`hotspots/dummy?sensors=[15,5]&level=0.5`).then(response => response.json().then(json => {
-                svg.append("g")
-                    .attr("id", "hotspot")
-                    .selectAll("path")
-                    .data(json.hotspots.features)
-                    .join("path")
-                    .attr("d", path)
-                    .style("fill", "yellow")
-                    .style("opacity", 0.5)
-                    .style("pointer-events", "none")
-
+            fetch(api_endpoint+`hotspots`).then(response => response.json().then(json => {
                 svg.append("g")
                     .attr("id", "properties")
                     .selectAll("path")
-                    .data(json.properties.features)
+                    .data(json.features)
                     .join("path")
                     .attr("d", path.pointRadius(1.5))
                     .style("fill", "darkred")
