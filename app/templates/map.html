@@ -9,12 +9,29 @@
   <script src="https://cdn.maptiler.com/mapbox-gl-js/v1.13.2/mapbox-gl.js"></script>
   <link href="https://cdn.maptiler.com/mapbox-gl-js/v1.13.2/mapbox-gl.css" rel="stylesheet" />
   <style>
-    #map {position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 0;}
-    svg {position: absolute; z-index: 2; }
+    body {
+            font-family: "Helvetica Neue", Helvetica, sans-serif;
+            font-size: 14px;
+            color: #333;
+            background-color: #bbb;
+        }
+    #map {height:70vw; width:70vw;}
   </style>
 </head>
 <body>
-  <div id="map">
+  <div>
+    <h1>Floodaware Dashboard</h1>
+    <p>Welcome to the development build of the Floodaware dashboard</p>
+    <p>You can hover over the red icons to view information about the water level sensors,
+        all values are in m(AHD), the scale automatically adjusts for each sensor
+    </p>
+    <p>
+        You can also hover over the graph of the average rainfall from BOM(mm/hr)
+        (currently historical data only) to update the map display of rain clouds
+    </p>
+    <div id="map"></div>
+  </div>
+  
   </div>
   <script>
     // mapboxgl.accessToken = 'pk.eyJ1IjoibmF0b2h1dGNoIiwiYSI6ImNsMW85cmxsbjEyZTQzYnM5ZXhvdm53MHoifQ.7tChnQlrKf5gGk-ATFiPGg'
@@ -25,7 +42,7 @@
       style: 'https://api.maptiler.com/maps/topo/style.json?key=TGgOfxJrRHJvzjeiOdhm',
       //style: 'mapbox://styles/natohutch/cl1vptxmu000i16pnii0nk61a',
       center: [150.88,-34.4],
-      zoom: 13.3,
+      zoom: 12,
       maxBounds: [
           [150.73,-34.49],
           [151,-34.32]
@@ -126,6 +143,10 @@
         }
       )
     })
+
+    // map.on("render", () => {
+    //   map.resize()
+    // })
       
 
     
