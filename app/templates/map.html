@@ -50,12 +50,18 @@
               .attr("id", "graph")
               .attr("width", width + margin.left + margin.right)
               .attr("height", height + margin.top + margin.bottom)
+
+        this.group = this.graph.select("svg")
           .append("g")
               .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
 
       }
 
       createGraph = (data, state) => {
+        let margin = {top: 10, right: 30, bottom: 30, left: 60},
+          width = 360 - margin.left - margin.right,
+          height = 260 - margin.top - margin.bottom;
+
         let stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
         data.forEach(d => {
             d.stamp = stringtodate(d.stamp)
@@ -63,19 +69,19 @@
 
         data = data.filter(d => d.level < 5000)
 
-        temp = state.sensors.features.map(d => [d.properties.id, d.properties.ahd])
-        ahds = Object.fromEntries(temp)
+        // temp = state.sensors.features.map(d => [d.properties.id, d.properties.ahd])
+        // ahds = Object.fromEntries(temp)
 
-        data.forEach(d => {
-            d.level = ahds[d.id] - d.level/1000
-        })
+        // data.forEach(d => {
+        //     d.level = ahds[d.id] - d.level/1000
+        // })
 
-        dataselected = data.filter(d => d.id == 25)
+        const dataselected = data.filter(d => d.id == 25)
         
         let x = d3.scaleTime()
             .domain(d3.extent(data, d => d.stamp))
             .range([ 0, width ]);
-        this.graph.append("g")
+        this.group.append("g")
             .attr("id", "xaxis")
             .attr("transform", "translate(0," + height + ")")
             .call(d3.axisBottom(x));
@@ -83,11 +89,11 @@
         let y = d3.scaleLinear()
             .domain([0, d3.max(data, d => +d.level)])
             .range([ height, 0 ]);
-        this.graph.append("g")
+        this.group.append("g")
             .attr("id", "yaxis")
             .call(d3.axisLeft(y));
 
-        this.graph.append("path")
+        this.group.append("path")
             .attr("id", "data")
             .datum(dataselected)
             .attr("fill", "none")
@@ -98,7 +104,7 @@
                 .y(d => y(d.level))
             )
         
-        this.graph.append("text")
+        this.group.append("text")
             .attr("class", "y label")
             .attr("text-anchor", "end")
             .attr("y", 6)
@@ -107,7 +113,7 @@
             .attr("transform", "rotate(-90)")
             .text("Water Level Sensor Reading (mAHD)")
 
-        updateGraph = () => {
+        const updateGraph = () => {
             dataselected = data.filter(d => d.id == selectedSensor)
 
             y = d3.scaleLinear()
@@ -117,7 +123,7 @@
             d3.selectAll("g #yaxis")
                 .call(d3.axisLeft(y))
             
-            updated = this.graph.select("path#data")
+            updated = this.group.select("path#data")
                 .datum(dataselected)
                 .attr("fill", "none")
                 .attr("stroke", "steelblue")
@@ -132,82 +138,165 @@
 
     class ApiHandler {
       constructor() {
+        this.dateRange = {}
+      }
+
+      bindDateRange() {
 
       }
 
-      bindRadar() {
+      async bindRadar(apiRef, setRadar, updateRadar) {
+        const json = await fetch(api_endpoint+`rainfall?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
+        //console.log(json)
+        setRadar(json)
+      }
+
+      async bindHotspots() {
 
       }
 
-      bindHotspots() {
-
+      async bindLevels(apiRef, setLevels, updateLevels) {
+        const json = await fetch(api_endpoint+`sensors/data?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
+        setLevels(json)
       }
 
-      bindLevels() {
-
-      }
-
-      bindRainfallAvg() {
+      async bindRainfallAvg() {
 
       }
     }
 
     class Model {
       constructor() {
+        this.dateRange = {}
+
         this.radar = {}
         this.hotpsots = {}
         this.levels = {}
         this.rainfallAvg = {}
+
+        this.onDateRangeChange = []
+
+        this.onRadarChange = []
+        this.onHotspotChange = []
+        this.onLevelChange = []
+        this.onRainfallAvgChange = []
       }
 
-      setRadar() {
+      bindDateRangeChange = (func) => {
+        this.onDateRangeChange.push(func)
+      }
+
+      setDateRange = (obj) => {
+        this.dateRange = obj
+        for (func of this.onDateRangeChange) {
+          func(this.dateRange)
+        }
+      }
+
+      bindRadarChange = (func) => {
+        this.onRadarChange.push(func)
+      }
+
+      setRadar = (data) => {
+        this.radar = data
+        for (func of this.onRadarChange) {
+          func(this.radar)
+        }
+      }
+
+      updateRadar = () => {
 
       }
 
-      updateRadar() {
+      bindHotspotChange = (func) => {
+        this.onHotspotChange.push(func)
+      }
+
+      setHotspots = (data) => {
+        this.hotspots = data
+        for (func of this.onHotspotChange) {
+          func(this.hotspots)
+        }
+      }
+
+      bindLevelChange = (func) => {
+        this.onLevelChange.push(func)
+      }
+
+      setLevels = (data) => {
+        this.levels = data
+        for (func of this.onLevelChange) {
+          func(this.levels)
+        }
+      }
+
+      updateLevels = () => {
 
       }
 
-      setHotspots() {
-
+      bindRainfallAvgChange = (func) => {
+        this.onRainfallAvgChange.push(func)
       }
 
-      setLevels() {
-
+      setRainfallAvg = (data) => {
+        this.rainfallAvg = data
+        for (func of this.onRainfallAvgChange) {
+          func(this.rainfallAvg)
+        }
       }
 
-      updateLevels() {
-
-      }
-
-      setRainfallAvg() {
-
-      }
-
-      updateRainfallAvg() {
+      updateRainfallAvg = () => {
 
       }
     }
 
     class View {
-      constructor() {
-
+      constructor(map) {
+        this.map = map
+        this.chart = new Chart()
       }
+
+      bindClickSensor = (func) => {
+        map.on("click", "sensors", e => {
+          console.log(e.features)
+
+          const coordinates = e.features[0].geometry.coordinates.slice();
+          
+          while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+          coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+          }
+          
+          new mapboxgl.Popup()
+            .setLngLat(coordinates)
+            .setHTML(`
+              <h1>${e.features[0].properties.id}</h1>
+              <svg width="360" height="360"></svg>
+            `)
+            .setMaxWidth(400)
+            .addTo(this.map);
+        })
+      }
+
     }
 
     class Controller {
-      constructor() {
+      constructor(model, view) {
+        this.model = model
+        this.view = view
+
+        this.view.bindClickSensor("")
+      }
+
+      handleClickSensor = (features) => {
 
       }
     }
 
   </script>
   <script>
-    // mapboxgl.accessToken = 'pk.eyJ1IjoibmF0b2h1dGNoIiwiYSI6ImNsMW85cmxsbjEyZTQzYnM5ZXhvdm53MHoifQ.7tChnQlrKf5gGk-ATFiPGg'
-    // You can remove the following line if you don't need support for RTL (right-to-left) labels:
-    //mapboxgl.setRTLTextPlugin('https://cdn.maptiler.com/mapbox-gl-js/plugins/mapbox-gl-rtl-text/v0.2.3/mapbox-gl-rtl-text.js');
-    
-    let map = new mapboxgl.Map({
+    const api_endpoint = window.location.origin+"/api/"
+
+    const map = new mapboxgl.Map({
       container: 'map',
       style: 'https://api.maptiler.com/maps/topo/style.json?key=TGgOfxJrRHJvzjeiOdhm',
       //style: 'mapbox://styles/natohutch/cl1vptxmu000i16pnii0nk61a',
@@ -219,8 +308,25 @@
       ]
     })
 
-    let api_endpoint = window.location.origin+"/api/"
+    // mapboxgl.accessToken = 'pk.eyJ1IjoibmF0b2h1dGNoIiwiYSI6ImNsMW85cmxsbjEyZTQzYnM5ZXhvdm53MHoifQ.7tChnQlrKf5gGk-ATFiPGg'
+    // You can remove the following line if you don't need support for RTL (right-to-left) labels:
+    //mapboxgl.setRTLTextPlugin('https://cdn.maptiler.com/mapbox-gl-js/plugins/mapbox-gl-rtl-text/v0.2.3/mapbox-gl-rtl-text.js');
 
+    const controller = new Controller(new Model(), new View(map))
+
+    const apiHandler = new ApiHandler()
+
+    window.controller = controller
+
+    window.apiHandler = apiHandler
+
+    apiHandler.dateRange = {start: "20200207", end: "20200208"}
+
+    apiHandler.bindRadar("", controller.model.setRadar, controller.model.updateRadar)
+
+    apiHandler.bindLevels("", controller.model.setLevels, controller.model.updateLevels)
+
+    
     
     map.on("load", () => {
       map.addSource("hotspots", {
@@ -303,7 +409,7 @@
             "source": "sensors",
             "layout": {
               "icon-image": "level_sensor",
-              "icon-size": 0.05,
+              "icon-size": 0.035,
               "icon-allow-overlap": true,
             },
             "paint": {
