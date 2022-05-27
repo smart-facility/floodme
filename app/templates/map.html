@@ -134,6 +134,52 @@
                 )
         }
       }
+
+      createGraph2 = (data) => {
+        let margin = {top: 10, right: 30, bottom: 30, left: 60},
+          width = 360 - margin.left - margin.right,
+          height = 260 - margin.top - margin.bottom;
+          
+        let stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
+        data.forEach(d => {
+            d.stamp = stringtodate(d.stamp)
+            d.avg = (d.avg/300)*3600
+        })
+
+        const dataselected = data
+        
+        let x = d3.scaleTime()
+            .domain(d3.extent(data, d => d.stamp))
+            .range([ 0, width ]);
+        this.group.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x));
+
+        let y = d3.scaleLinear()
+            .domain([0, d3.max(data, d => +d.avg)])
+            .range([ height, 0 ]);
+        this.group.append("g")
+            .call(d3.axisLeft(y));
+
+        this.group.append("path")
+            .attr("id", "data")
+            .datum(dataselected)
+            .attr("fill", "none")
+            .attr("stroke", "steelblue")
+            .attr("stroke-width", 1.5)
+            .attr("d", d3.line()
+                .x(d => x(d.stamp))
+                .y(d => y(d.avg))
+            )
+
+        this.group.append("text")
+            .attr("class", "y label")
+            .attr("text-anchor", "end")
+            .attr("y", 6)
+            .attr("dy", "-3em")
+            .attr("transform", "rotate(-90)")
+            .text("BOM Average Rainfall (mm/hr)")
+      }
     }
 
     class ApiHandler {
@@ -160,8 +206,9 @@
         setLevels(json)
       }
 
-      async bindRainfallAvg() {
-
+      async bindRainfallAvg(apiRef, setRainfallAvg, updateRainfallAvg) {
+        const json = await fetch(api_endpoint+`rainfall/avg?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
+        setRainfallAvg(json)
       }
     }
 
@@ -258,23 +305,28 @@
 
       bindClickSensor = (func) => {
         map.on("click", "sensors", e => {
-          console.log(e.features)
-
-          const coordinates = e.features[0].geometry.coordinates.slice();
-          
-          while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-          coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-          }
-          
-          new mapboxgl.Popup()
-            .setLngLat(coordinates)
-            .setHTML(`
-              <h1>${e.features[0].properties.id}</h1>
-              <svg width="360" height="360"></svg>
-            `)
-            .setMaxWidth(400)
-            .addTo(this.map);
+          func(e)
         })
+      }
+
+      displayPopupChart(e, data) {
+        const coordinates = e.features[0].geometry.coordinates.slice()
+        
+        while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+          coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360
+        }
+        
+        this.chart.createGraph(data.features, "")
+        
+        new mapboxgl.Popup()
+          .setLngLat(coordinates)
+          .setHTML(`
+            <h1>${e.features[0].properties.id}</h1>
+            ${this.chart.graph.node().innerHTML}
+          `)
+          .setMaxWidth(400)
+          .addTo(this.map)
+
       }
 
     }
@@ -284,11 +336,11 @@
         this.model = model
         this.view = view
 
-        this.view.bindClickSensor("")
+        this.view.bindClickSensor(this.handleClickSensor)
       }
 
-      handleClickSensor = (features) => {
-
+      handleClickSensor = (e) => {
+        this.view.displayPopupChart(e, this.model.levels)
       }
     }
 
@@ -323,8 +375,16 @@
     apiHandler.dateRange = {start: "20200207", end: "20200208"}
 
     apiHandler.bindRadar("", controller.model.setRadar, controller.model.updateRadar)
-
     apiHandler.bindLevels("", controller.model.setLevels, controller.model.updateLevels)
+    apiHandler.bindRainfallAvg("", controller.model.setRainfallAvg, controller.model.updateRainfallAvg).then(() => {
+      const rainfallChart = new Chart()
+      rainfallChart.createGraph2(controller.model.rainfallAvg.features)
+
+      document.body.append(rainfallChart.graph.node())
+
+    })
+
+    
 
     
     
