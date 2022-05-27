@@ -18,7 +18,7 @@
             color: #333;
             background-color: #bbb;
         }
-    #map {height:min(70vw, 85vh); width:min(70vw, 85vh);}
+    #map {height:min(60vw, 75vh); width:min(60vw, 75vh);}
   </style>
 </head>
 <body>
@@ -139,7 +139,7 @@
         let margin = {top: 10, right: 30, bottom: 30, left: 60},
           width = 360 - margin.left - margin.right,
           height = 260 - margin.top - margin.bottom;
-          
+
         let stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
         data.forEach(d => {
             d.stamp = stringtodate(d.stamp)
@@ -315,13 +315,13 @@
         while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
           coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360
         }
-        
+
         this.chart.createGraph(data.features, "")
         
         new mapboxgl.Popup()
           .setLngLat(coordinates)
           .setHTML(`
-            <h1>${e.features[0].properties.id}</h1>
+            <h2>Sensor ${e.features[0].properties.id}</h2>
             ${this.chart.graph.node().innerHTML}
           `)
           .setMaxWidth(400)
@@ -379,8 +379,7 @@
     apiHandler.bindRainfallAvg("", controller.model.setRainfallAvg, controller.model.updateRainfallAvg).then(() => {
       const rainfallChart = new Chart()
       rainfallChart.createGraph2(controller.model.rainfallAvg.features)
-
-      document.body.append(rainfallChart.graph.node())
+      document.body.getElementsByTagName("div")[0].append(rainfallChart.graph.node())
 
     })
 
