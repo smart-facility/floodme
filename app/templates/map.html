@@ -174,6 +174,11 @@
 
       }
 
+      async bindCatchment(apiRef, setCatchment) {
+        const json = await fetch(api_endpoint+"catchment").then(response => response.json())
+        setCatchment(json)
+      }
+
       async bindRadar(apiRef, setRadar, updateRadar) {
         const json = await fetch(api_endpoint+`rainfall?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
         //console.log(json)
@@ -199,6 +204,8 @@
       constructor() {
         this.dateRange = {}
 
+        this.catchment = {}
+
         this.radar = {}
         this.hotpsots = {}
         this.levels = {}
@@ -206,11 +213,24 @@
 
         this.onDateRangeChange = []
 
+        this.onSetCatchment = []
+
         this.onRadarChange = []
         this.onHotspotChange = []
         this.onLevelChange = []
         this.onSetRainfallAvg = []
         this.onUpdateRainfallAvg = []
+      }
+
+      bindSetCatchment = (func) => {
+        this.onSetCatchment.push(func)
+      }
+
+      setCatchment = (data) => {
+        this.catchment = data
+        for (const func of this.onSetCatchment) {
+          func(this.catchment)
+        }
       }
 
       bindDateRangeChange = (func) => {
@@ -367,11 +387,42 @@
 
         this.model.bindSetRainfallAvg(this.onSetRainfallAvg)
         this.model.bindUpdateRainfallAvg(this.onUpdateRainfallAvg)
+        this.model.bindSetCatchment(this.onSetCatchment)
 
         // this.apiHandler.bindRadar("", this.model.setRadar, this.model.updateRadar)
         this.apiHandler.bindLevels("", this.model.setLevels, this.model.updateLevels)
         this.apiHandler.bindRainfallAvg("", this.model.setRainfallAvg, this.model.updateRainfallAvg)
+        this.apiHandler.bindCatchment("", this.model.setCatchment)
 
+      }
+
+      onSetCatchment = () => {
+        window.map.addSource("catchment", {
+          type: "geojson",
+          data: this.model.catchment
+        })
+
+        map.addLayer({
+          "id": "catchment",
+          "type": "fill",
+          "source": "catchment",
+          "paint": {
+            "fill-color": "green",
+            "fill-opacity": 0.11,
+            "fill-outline-color": "darkgreen"
+          }
+        })
+
+        map.addLayer({
+          "id": "catchment-outline",
+          "type": "line",
+          "source": "catchment",
+          "paint": {
+            "line-color": "darkgreen",
+            "line-width": 2,
+            "line-opacity": 0.4,
+          }
+        })
       }
 
       handleClickSensor = (e) => {
@@ -428,37 +479,12 @@
         data: api_endpoint+"hotspots"
       })
 
-      map.addSource("catchment", {
-        type: "geojson",
-        data: api_endpoint+"catchment"
-      })
-
       map.addSource("sensors", {
         type: "geojson",
         data: api_endpoint+"sensors"
       })
 
-      map.addLayer({
-        "id": "catchment",
-        "type": "fill",
-        "source": "catchment",
-        "paint": {
-          "fill-color": "green",
-          "fill-opacity": 0.11,
-          "fill-outline-color": "darkgreen"
-        }
-      })
-
-      map.addLayer({
-        "id": "catchment-outline",
-        "type": "line",
-        "source": "catchment",
-        "paint": {
-          "line-color": "darkgreen",
-          "line-width": 2,
-          "line-opacity": 0.4,
-        }
-      })
+      
 
       // let target = map.getStyle().layers[15]
       // map.moveLayer("catchment", target.id)
