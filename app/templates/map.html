@@ -62,78 +62,69 @@
 
       }
 
-      createGraph = (data, state) => {
-        let stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
-        data.forEach(d => {
-            d.stamp = stringtodate(d.stamp)
-        })
+      createGraph = (data) => {
 
-        data = data.filter(d => d.level < 5000)
-
-        // temp = state.sensors.features.map(d => [d.properties.id, d.properties.ahd])
-        // ahds = Object.fromEntries(temp)
-
-        // data.forEach(d => {
-        //     d.level = ahds[d.id] - d.level/1000
-        // })
-
-        const dataselected = data
-        
-        let x = d3.scaleTime()
-            .domain(d3.extent(data, d => d.stamp))
-            .range([ 0, this.width ]);
+        this.x = d3.scaleTime()
+          .domain(d3.extent(data, d => d.stamp))
+          .range([ 0, this.width ])
         this.group.append("g")
-            .attr("id", "xaxis")
-            .attr("transform", "translate(0," + this.height + ")")
-            .call(d3.axisBottom(x));
+          .attr("id", "xaxis")
+          .attr("transform", "translate(0," + this.height + ")")
+          .call(d3.axisBottom(this.x))
 
-        let y = d3.scaleLinear()
-            .domain([0, d3.max(data, d => +d.level)])
-            .range([ this.height, 0 ]);
+        this.y = d3.scaleLinear()
+          .domain([d3.min(data, d => +d.level)-0.5, d3.max(data, d => +d.level)+0.5])
+          .range([ this.height, 0 ]);
         this.group.append("g")
-            .attr("id", "yaxis")
-            .call(d3.axisLeft(y));
+          .attr("id", "yaxis")
+          .call(d3.axisLeft(this.y));
 
         this.group.append("path")
-            .attr("id", "data")
-            .datum(dataselected)
+          .attr("id", "data")
+          .datum(data)
+          .attr("fill", "none")
+          .attr("stroke", "steelblue")
+          .attr("stroke-width", 1.5)
+          .attr("d", d3.line()
+              .x(d => this.x(d.stamp))
+              .y(d => this.y(d.level))
+          )
+        
+        this.group.append("text")
+          .attr("class", "y label")
+          .attr("text-anchor", "end")
+          .attr("y", 6)
+          .attr("dy", "-3em")
+          .attr("fill", "white")
+          .attr("transform", "rotate(-90)")
+          .text("Water Level Sensor Reading (mAHD)")
+      }
+
+      updateGraph = (data) => {
+
+          this.x = d3.scaleTime()
+            .domain(d3.extent(data, d => d.stamp))
+            .range([ 0, this.width ])
+
+          this.y = d3.scaleLinear()
+            .domain([d3.min(data, d => +d.level)-0.5, d3.max(data, d => +d.level)+0.5])
+            .range([ this.height, 0 ])
+          
+          this.group.selectAll("g #xaxis")
+            .call(d3.axisBottom(this.x))
+
+          this.group.selectAll("g #yaxis")
+            .call(d3.axisLeft(this.y))
+          
+          this.group.select("path#data")
+            .datum(data)
             .attr("fill", "none")
             .attr("stroke", "steelblue")
             .attr("stroke-width", 1.5)
             .attr("d", d3.line()
-                .x(d => x(d.stamp))
-                .y(d => y(d.level))
-            )
-        
-        this.group.append("text")
-            .attr("class", "y label")
-            .attr("text-anchor", "end")
-            .attr("y", 6)
-            .attr("dy", "-3em")
-            .attr("fill", "white")
-            .attr("transform", "rotate(-90)")
-            .text("Water Level Sensor Reading (mAHD)")
-
-        const updateGraph = () => {
-            dataselected = data.filter(d => d.id == selectedSensor)
-
-            y = d3.scaleLinear()
-                .domain([d3.min(dataselected, d => +d.level)-0.5, d3.max(dataselected, d => +d.level)+0.5])
-                .range([ this.height, 0 ])
-            
-            d3.selectAll("g #yaxis")
-                .call(d3.axisLeft(y))
-            
-            this.group.select("path#data")
-                .datum(dataselected)
-                .attr("fill", "none")
-                .attr("stroke", "steelblue")
-                .attr("stroke-width", 1.5)
-                .attr("d", d3.line()
-                    .x(d => x(d.stamp))
-                    .y(d => y(d.level))
-                )
-        }
+                .x(d => this.x(d.stamp))
+                .y(d => this.y(d.level))
+              )
       }
 
       createGraph2 = (data) => {
@@ -314,7 +305,21 @@
           coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360
         }
 
-        this.chart.createGraph(data.features.filter(feature => feature.id === e.features[0].properties.id), "")
+        const selected = JSON.parse(JSON.stringify(data.features.filter(d => d.id === e.features[0].properties.id).filter(d => d.level < 5000)))
+
+        const stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
+        selected.forEach(d => {
+            d.stamp = stringtodate(d.stamp)
+        })
+
+        // temp = state.sensors.features.map(d => [d.properties.id, d.properties.ahd])
+        // ahds = Object.fromEntries(temp)
+
+        // data.forEach(d => {
+        //     d.level = ahds[d.id] - d.level/1000
+        // })
+
+        this.chart.updateGraph(selected, "")
         
         new mapboxgl.Popup()
           .setLngLat(coordinates)
