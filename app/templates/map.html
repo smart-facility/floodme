@@ -38,30 +38,31 @@
   </div>
   <script>
     class Chart {
-      constructor() {
-        let margin = {top: 10, right: 30, bottom: 30, left: 60},
-          width = 360 - margin.left - margin.right,
-          height = 260 - margin.top - margin.bottom;
+      constructor(
+        svgWidth = 360,
+        svgHeight = 260,
+        margin = {top: 10, right: 30, bottom: 30, left: 60}
+      ) 
+      {
+        this.margin = margin
+        this.width = svgWidth - margin.left - margin.right,
+        this.height = svgHeight - margin.top - margin.bottom;
 
         this.graph = d3.select(document.createElement("div"))
 
         this.graph
           .append("svg")
               .attr("id", "graph")
-              .attr("width", width + margin.left + margin.right)
-              .attr("height", height + margin.top + margin.bottom)
+              .attr("width", this.width + this.margin.left + this.margin.right)
+              .attr("height", this.height + this.margin.top + this.margin.bottom)
 
         this.group = this.graph.select("svg")
           .append("g")
-              .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+              .attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")")
 
       }
 
       createGraph = (data, state) => {
-        let margin = {top: 10, right: 30, bottom: 30, left: 60},
-          width = 360 - margin.left - margin.right,
-          height = 260 - margin.top - margin.bottom;
-
         let stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
         data.forEach(d => {
             d.stamp = stringtodate(d.stamp)
@@ -76,19 +77,19 @@
         //     d.level = ahds[d.id] - d.level/1000
         // })
 
-        const dataselected = data.filter(d => d.id == 25)
+        const dataselected = data
         
         let x = d3.scaleTime()
             .domain(d3.extent(data, d => d.stamp))
-            .range([ 0, width ]);
+            .range([ 0, this.width ]);
         this.group.append("g")
             .attr("id", "xaxis")
-            .attr("transform", "translate(0," + height + ")")
+            .attr("transform", "translate(0," + this.height + ")")
             .call(d3.axisBottom(x));
 
         let y = d3.scaleLinear()
             .domain([0, d3.max(data, d => +d.level)])
-            .range([ height, 0 ]);
+            .range([ this.height, 0 ]);
         this.group.append("g")
             .attr("id", "yaxis")
             .call(d3.axisLeft(y));
@@ -118,12 +119,12 @@
 
             y = d3.scaleLinear()
                 .domain([d3.min(dataselected, d => +d.level)-0.5, d3.max(dataselected, d => +d.level)+0.5])
-                .range([ height, 0 ])
+                .range([ this.height, 0 ])
             
             d3.selectAll("g #yaxis")
                 .call(d3.axisLeft(y))
             
-            updated = this.group.select("path#data")
+            this.group.select("path#data")
                 .datum(dataselected)
                 .attr("fill", "none")
                 .attr("stroke", "steelblue")
@@ -136,10 +137,6 @@
       }
 
       createGraph2 = (data) => {
-        let margin = {top: 10, right: 30, bottom: 30, left: 60},
-          width = 360 - margin.left - margin.right,
-          height = 260 - margin.top - margin.bottom;
-
         let stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
         data.forEach(d => {
             d.stamp = stringtodate(d.stamp)
@@ -150,14 +147,14 @@
         
         let x = d3.scaleTime()
             .domain(d3.extent(data, d => d.stamp))
-            .range([ 0, width ]);
+            .range([ 0, this.width ]);
         this.group.append("g")
-            .attr("transform", "translate(0," + height + ")")
+            .attr("transform", "translate(0," + this.height + ")")
             .call(d3.axisBottom(x));
 
         let y = d3.scaleLinear()
             .domain([0, d3.max(data, d => +d.avg)])
-            .range([ height, 0 ]);
+            .range([ this.height, 0 ]);
         this.group.append("g")
             .call(d3.axisLeft(y));
 
@@ -301,6 +298,7 @@
       constructor(map) {
         this.map = map
         this.chart = new Chart()
+        this.chart.createGraph([], "")
       }
 
       bindClickSensor = (func) => {
@@ -316,7 +314,7 @@
           coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360
         }
 
-        this.chart.createGraph(data.features, "")
+        this.chart.createGraph(data.features.filter(feature => feature.id === e.features[0].properties.id), "")
         
         new mapboxgl.Popup()
           .setLngLat(coordinates)
@@ -359,6 +357,14 @@
           [151,-34.32]
       ]
     })
+    map.getCanvas().style.cursor = 'default'
+
+    map.on('mouseenter', 'sensors', () => {
+      map.getCanvas().style.cursor = 'pointer'
+    })
+    map.on('mouseleave', 'sensors', () => {
+      map.getCanvas().style.cursor = 'default'
+    })
 
     // mapboxgl.accessToken = 'pk.eyJ1IjoibmF0b2h1dGNoIiwiYSI6ImNsMW85cmxsbjEyZTQzYnM5ZXhvdm53MHoifQ.7tChnQlrKf5gGk-ATFiPGg'
     // You can remove the following line if you don't need support for RTL (right-to-left) labels:
@@ -377,7 +383,7 @@
     apiHandler.bindRadar("", controller.model.setRadar, controller.model.updateRadar)
     apiHandler.bindLevels("", controller.model.setLevels, controller.model.updateLevels)
     apiHandler.bindRainfallAvg("", controller.model.setRainfallAvg, controller.model.updateRainfallAvg).then(() => {
-      const rainfallChart = new Chart()
+      const rainfallChart = new Chart(svgWidth = 720)
       rainfallChart.createGraph2(controller.model.rainfallAvg.features)
       document.body.getElementsByTagName("div")[0].append(rainfallChart.graph.node())
 
