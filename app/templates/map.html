@@ -39,14 +39,16 @@
   <script>
     class Chart {
       constructor(
+        yAxisTitle = "",
         svgWidth = 360,
         svgHeight = 260,
         margin = {top: 10, right: 30, bottom: 30, left: 60}
       ) 
       {
         this.margin = margin
-        this.width = svgWidth - margin.left - margin.right,
-        this.height = svgHeight - margin.top - margin.bottom;
+        this.width = svgWidth - margin.left - margin.right
+        this.height = svgHeight - margin.top - margin.bottom
+        this.yAxisTitle = yAxisTitle
 
         this.graph = d3.select(document.createElement("div"))
 
@@ -97,7 +99,7 @@
           .attr("dy", "-3em")
           .attr("fill", "white")
           .attr("transform", "rotate(-90)")
-          .text("Water Level Sensor Reading (mAHD)")
+          .text(this.yAxisTitle)
       }
 
       updateGraph = (data) => {
@@ -128,14 +130,7 @@
       }
 
       createGraph2 = (data) => {
-        let stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
-        data.forEach(d => {
-            d.stamp = stringtodate(d.stamp)
-            d.avg = (d.avg/300)*3600
-        })
-
-        const dataselected = data
-        
+                
         let x = d3.scaleTime()
             .domain(d3.extent(data, d => d.stamp))
             .range([ 0, this.width ]);
@@ -151,7 +146,7 @@
 
         this.group.append("path")
             .attr("id", "data")
-            .datum(dataselected)
+            .datum(data)
             .attr("fill", "none")
             .attr("stroke", "steelblue")
             .attr("stroke-width", 1.5)
@@ -166,7 +161,7 @@
             .attr("y", 6)
             .attr("dy", "-3em")
             .attr("transform", "rotate(-90)")
-            .text("BOM Average Rainfall (mm/hr)")
+            .text(this.yAxisTitle)
       }
     }
 
@@ -288,8 +283,8 @@
     class View {
       constructor(map) {
         this.map = map
-        this.chart = new Chart()
-        this.chart.createGraph([], "")
+        this.chart = new Chart("Water Level Sensor Reading (mAHD)")
+        this.chart.createGraph([])
       }
 
       bindClickSensor = (func) => {
@@ -319,7 +314,7 @@
         //     d.level = ahds[d.id] - d.level/1000
         // })
 
-        this.chart.updateGraph(selected, "")
+        this.chart.updateGraph(selected)
         
         new mapboxgl.Popup()
           .setLngLat(coordinates)
@@ -388,8 +383,16 @@
     apiHandler.bindRadar("", controller.model.setRadar, controller.model.updateRadar)
     apiHandler.bindLevels("", controller.model.setLevels, controller.model.updateLevels)
     apiHandler.bindRainfallAvg("", controller.model.setRainfallAvg, controller.model.updateRainfallAvg).then(() => {
-      const rainfallChart = new Chart(svgWidth = 720)
-      rainfallChart.createGraph2(controller.model.rainfallAvg.features)
+      const stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
+      
+      const selected = JSON.parse(JSON.stringify(controller.model.rainfallAvg.features))
+      selected.forEach(d => {
+          d.stamp = stringtodate(d.stamp)
+          d.avg = (d.avg/300)*3600
+      })
+
+      const rainfallChart = new Chart("BOM Average Rainfall (mm/hr)", svgWidth = 720)
+      rainfallChart.createGraph2(selected)
       document.body.getElementsByTagName("div")[0].append(rainfallChart.graph.node())
 
     })
