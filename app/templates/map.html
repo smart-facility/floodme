@@ -508,6 +508,25 @@
             "circle-radius": 4
           }
         })
+
+        map.on("click", "hotspots", e => {
+
+          const coordinates = e.features[0].geometry.coordinates.slice()
+        
+          while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+            coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360
+          }
+
+          new mapboxgl.Popup()
+            .setLngLat(coordinates)
+            .setHTML(`
+              <h2>Hotspot</h2>
+              <h3>Flood Depth: ${e.features[0].properties.flood_depth}</h3>
+            `)
+            .setMaxWidth(400)
+            .addTo(this.view.map)
+
+        })
       }
 
       onSetRainfallAvg = () => {
@@ -546,6 +565,13 @@
       map.getCanvas().style.cursor = 'pointer'
     })
     map.on('mouseleave', 'sensors', () => {
+      map.getCanvas().style.cursor = 'default'
+    })
+
+    map.on('mouseenter', 'hotspots', () => {
+      map.getCanvas().style.cursor = 'pointer'
+    })
+    map.on('mouseleave', 'hotspots', () => {
       map.getCanvas().style.cursor = 'default'
     })
 
