@@ -184,14 +184,15 @@
         setSensors(json)
       }
 
+      async bindHotspots(apiRef, setHotspots) {
+        const json = await fetch(api_endpoint+"hotspots").then(response => response.json())
+        setHotspots(json)
+      }
+
       async bindRadar(apiRef, setRadar, updateRadar) {
         const json = await fetch(api_endpoint+`rainfall?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
         //console.log(json)
         setRadar(json)
-      }
-
-      async bindHotspots() {
-
       }
 
       async bindLevels(apiRef, setLevels, updateLevels) {
@@ -223,7 +224,7 @@
         this.onSetSensors = []
 
         this.onRadarChange = []
-        this.onHotspotChange = []
+        this.onSetHotspots = []
         this.onLevelChange = []
         this.onSetRainfallAvg = []
         this.onUpdateRainfallAvg = []
@@ -277,13 +278,13 @@
 
       }
 
-      bindHotspotChange = (func) => {
-        this.onHotspotChange.push(func)
+      bindSetHotspots = (func) => {
+        this.onSetHotspots.push(func)
       }
 
       setHotspots = (data) => {
         this.hotspots = data
-        for (func of this.onHotspotChange) {
+        for (const func of this.onSetHotspots) {
           func(this.hotspots)
         }
       }
@@ -407,12 +408,14 @@
         this.model.bindUpdateRainfallAvg(this.onUpdateRainfallAvg)
         this.model.bindSetCatchment(this.onSetCatchment)
         this.model.bindSetCatchment(this.onSetSensors)
+        this.model.bindSetHotspots(this.onSetHotspots)
 
         // this.apiHandler.bindRadar("", this.model.setRadar, this.model.updateRadar)
         this.apiHandler.bindLevels("", this.model.setLevels, this.model.updateLevels)
         this.apiHandler.bindRainfallAvg("", this.model.setRainfallAvg, this.model.updateRainfallAvg)
         this.apiHandler.bindCatchment("", this.model.setCatchment)
         this.apiHandler.bindSensors("", this.model.setSensors)
+        this.apiHandler.bindHotspots("", this.model.setHotspots)
 
       }
 
@@ -476,6 +479,37 @@
 
       }
 
+      onSetHotspots = () => {
+        map.addSource("hotspots", {
+          type: "geojson",
+          data: this.model.hotspots
+        })
+
+        map.addLayer({
+          "id": "hotspots",
+          "type": "circle",
+          "source": "hotspots",
+          "paint": {
+            "circle-color": [
+              "interpolate",
+              ["linear"],
+              ["get", "flood_depth"],
+              -0.5,
+              "yellow",
+              0,
+              "orange",
+              3,
+              "red",
+              6,
+              "darkred",
+              10,
+              "black"
+            ],
+            "circle-radius": 4
+          }
+        })
+      }
+
       onSetRainfallAvg = () => {
         this.view.displayRainfallChart(this.model.rainfallAvg.features)
       }
@@ -526,47 +560,11 @@
 
     
     map.on("load", () => {
-      map.addSource("hotspots", {
-        type: "geojson",
-        data: api_endpoint+"hotspots"
-      })
-
-      map.addLayer({
-        "id": "hotspots",
-        "type": "circle",
-        "source": "hotspots",
-        "paint": {
-          "circle-color": [
-            "interpolate",
-            ["linear"],
-            ["get", "flood_depth"],
-            -0.5,
-            "yellow",
-            0,
-            "orange",
-            3,
-            "red",
-            6,
-            "darkred",
-            10,
-            "black"
-          ],
-          "circle-radius": 4
-        }
-      })
-
-
-      
-
       // let target = map.getStyle().layers[15]
       // map.moveLayer("catchment", target.id)
       // map.moveLayer("catchment-outline", target.id)
-
-
       
       map.addControl(new mapboxgl.NavigationControl())
-
-      
     })
 
     // map.on("render", () => {
