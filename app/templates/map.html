@@ -179,6 +179,11 @@
         setCatchment(json)
       }
 
+      async bindSensors(apiRef, setSensors) {
+        const json = await fetch(api_endpoint+"sensors").then(response => response.json())
+        setSensors(json)
+      }
+
       async bindRadar(apiRef, setRadar, updateRadar) {
         const json = await fetch(api_endpoint+`rainfall?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
         //console.log(json)
@@ -205,6 +210,7 @@
         this.dateRange = {}
 
         this.catchment = {}
+        this.sensors = {}
 
         this.radar = {}
         this.hotpsots = {}
@@ -214,6 +220,7 @@
         this.onDateRangeChange = []
 
         this.onSetCatchment = []
+        this.onSetSensors = []
 
         this.onRadarChange = []
         this.onHotspotChange = []
@@ -230,6 +237,17 @@
         this.catchment = data
         for (const func of this.onSetCatchment) {
           func(this.catchment)
+        }
+      }
+
+      bindSetSensors = (func) => {
+        this.onSetSensors.push(func)
+      }
+
+      setSensors = (data) => {
+        this.sensors = data
+        for (const func of this.onSetSensors) {
+          func(this.sensors)
         }
       }
 
@@ -339,7 +357,7 @@
 
       }
 
-      displayPopupChart(e, data) {
+      displayPopupChart(e, data, sensors) {
         const coordinates = e.features[0].geometry.coordinates.slice()
         
         while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
@@ -353,10 +371,10 @@
             d.stamp = stringtodate(d.stamp)
         })
 
-        // temp = state.sensors.features.map(d => [d.properties.id, d.properties.ahd])
-        // ahds = Object.fromEntries(temp)
+        // const temp = sensors.features.map(d => [d.properties.id, d.properties.ahd])
+        // const ahds = Object.fromEntries(temp)
 
-        // data.forEach(d => {
+        // selected.forEach(d => {
         //     d.level = ahds[d.id] - d.level/1000
         // })
 
@@ -388,11 +406,13 @@
         this.model.bindSetRainfallAvg(this.onSetRainfallAvg)
         this.model.bindUpdateRainfallAvg(this.onUpdateRainfallAvg)
         this.model.bindSetCatchment(this.onSetCatchment)
+        this.model.bindSetCatchment(this.onSetSensors)
 
         // this.apiHandler.bindRadar("", this.model.setRadar, this.model.updateRadar)
         this.apiHandler.bindLevels("", this.model.setLevels, this.model.updateLevels)
         this.apiHandler.bindRainfallAvg("", this.model.setRainfallAvg, this.model.updateRainfallAvg)
         this.apiHandler.bindCatchment("", this.model.setCatchment)
+        this.apiHandler.bindSensors("", this.model.setSensors)
 
       }
 
@@ -425,8 +445,39 @@
         })
       }
 
+      onSetSensors = () => {
+
+        map.addSource("sensors", {
+          type: "geojson",
+          data: this.model.sensors
+        })
+
+        map.loadImage(
+          "level_sensor.png",
+          (error, image) => {
+            if (error) throw error
+            map.addImage("level_sensor", image, {sdf: false})
+
+            map.addLayer({
+              "id": "sensors",
+              "type": "symbol",
+              "source": "sensors",
+              "layout": {
+                "icon-image": "level_sensor",
+                "icon-size": 0.035,
+                "icon-allow-overlap": true,
+              },
+              "paint": {
+                "icon-color": "blue"
+              }
+            })
+          }
+        )
+
+      }
+
       handleClickSensor = (e) => {
-        this.view.displayPopupChart(e, this.model.levels)
+        this.view.displayPopupChart(e, this.model.levels, this.model.catchment)
       }
 
       onSetRainfallAvg = () => {
@@ -479,18 +530,6 @@
         data: api_endpoint+"hotspots"
       })
 
-      map.addSource("sensors", {
-        type: "geojson",
-        data: api_endpoint+"sensors"
-      })
-
-      
-
-      // let target = map.getStyle().layers[15]
-      // map.moveLayer("catchment", target.id)
-      // map.moveLayer("catchment-outline", target.id)
-
-
       map.addLayer({
         "id": "hotspots",
         "type": "circle",
@@ -515,29 +554,18 @@
         }
       })
 
+
+      
+
+      // let target = map.getStyle().layers[15]
+      // map.moveLayer("catchment", target.id)
+      // map.moveLayer("catchment-outline", target.id)
+
+
+      
       map.addControl(new mapboxgl.NavigationControl())
 
-      map.loadImage(
-        "level_sensor.png",
-        (error, image) => {
-          if (error) throw error
-          map.addImage("level_sensor", image, {sdf: false})
-
-          map.addLayer({
-            "id": "sensors",
-            "type": "symbol",
-            "source": "sensors",
-            "layout": {
-              "icon-image": "level_sensor",
-              "icon-size": 0.035,
-              "icon-allow-overlap": true,
-            },
-            "paint": {
-              "icon-color": "blue"
-            }
-          })
-        }
-      )
+      
     })
 
     // map.on("render", () => {
