@@ -371,12 +371,12 @@
             d.stamp = stringtodate(d.stamp)
         })
 
-        // const temp = sensors.features.map(d => [d.properties.id, d.properties.ahd])
-        // const ahds = Object.fromEntries(temp)
+        const temp = sensors.features.map(d => [d.properties.id, d.properties.ahd])
+        const ahds = Object.fromEntries(temp)
 
-        // selected.forEach(d => {
-        //     d.level = ahds[d.id] - d.level/1000
-        // })
+        selected.forEach(d => {
+            d.level = ahds[d.id] - d.level/1000
+        })
 
         this.chart.updateGraph(selected)
         
@@ -476,10 +476,6 @@
 
       }
 
-      handleClickSensor = (e) => {
-        this.view.displayPopupChart(e, this.model.levels, this.model.catchment)
-      }
-
       onSetRainfallAvg = () => {
         this.view.displayRainfallChart(this.model.rainfallAvg.features)
       }
@@ -487,6 +483,11 @@
       onUpdateRainfallAvg = () => {
         this.view.updateRainfallChart(this.model.rainfallAvg.features)
       }
+
+      handleClickSensor = (e) => {
+        this.view.displayPopupChart(e, this.model.levels, this.model.sensors)
+      }
+
 
     }
 
