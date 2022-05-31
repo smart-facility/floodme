@@ -168,6 +168,8 @@
       constructor() {
         this.dateRange = {}
         this.retries = 5
+
+        this.onSetDateRange = []
       }
 
       async fetchRetry(url) {
@@ -181,7 +183,12 @@
         return "error"
       }
 
-      bindDateRange() {
+      setDateRange = (range) => {
+        this.dateRange = range
+
+        for (const func of this.onSetDateRange) {
+          func()
+        }
 
       }
 
@@ -208,11 +215,19 @@
       async bindLevels(apiRef, setLevels, updateLevels) {
         const json = await this.fetchRetry(api_endpoint+`sensors/data?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
         setLevels(json)
+        this.onSetDateRange.push(async () => {
+          const json = await this.fetchRetry(api_endpoint+`sensors/data?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
+          updateLevels(json)
+        })
       }
 
       async bindRainfallAvg(apiRef, setRainfallAvg, updateRainfallAvg) {
         const json = await this.fetchRetry(api_endpoint+`rainfall/avg?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
         setRainfallAvg(json)
+        this.onSetDateRange.push(async () => {
+          const json = await this.fetchRetry(api_endpoint+`rainfall/avg?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
+          // updateRainfallAvg(json)
+        })
       }
     }
 
@@ -228,7 +243,7 @@
         this.levels = {}
         this.rainfallAvg = {}
 
-        this.onDateRangeChange = []
+        this.onSetDateRange = []
 
         this.onSetCatchment = []
         this.onSetSensors = []
@@ -262,13 +277,13 @@
         }
       }
 
-      bindDateRangeChange = (func) => {
-        this.onDateRangeChange.push(func)
+      bindSetDateRange = (func) => {
+        this.onSetDateRange.push(func)
       }
 
       setDateRange = (obj) => {
         this.dateRange = obj
-        for (func of this.onDateRangeChange) {
+        for (const func of this.onSetDateRange) {
           func(this.dateRange)
         }
       }
@@ -305,13 +320,16 @@
 
       setLevels = (data) => {
         this.levels = data
-        for (func of this.onLevelChange) {
+        for (const func of this.onLevelChange) {
           func(this.levels)
         }
       }
 
-      updateLevels = () => {
-
+      updateLevels = (data) => {
+        this.levels = data
+        for (const func of this.onLevelChange) {
+          func(this.levels)
+        }
       }
 
       bindSetRainfallAvg = (func) => {
@@ -470,20 +488,23 @@
         this.view.bindClickSensor(this.handleClickSensor)
 
         this.apiHandler = new ApiHandler()
-        this.apiHandler.dateRange = {start: "20200207", end: "20200208"}
+        
 
         this.model.bindSetRainfallAvg(this.onSetRainfallAvg)
         this.model.bindUpdateRainfallAvg(this.onUpdateRainfallAvg)
         this.model.bindSetCatchment(this.onSetCatchment)
         this.model.bindSetCatchment(this.onSetSensors)
         this.model.bindSetHotspots(this.onSetHotspots)
+        this.model.bindSetDateRange(this.apiHandler.setDateRange)
 
         // this.apiHandler.bindRadar("", this.model.setRadar, this.model.updateRadar)
+        this.apiHandler.setDateRange({start: "20200207", end: "20200208"})
         this.apiHandler.bindLevels("", this.model.setLevels, this.model.updateLevels)
         this.apiHandler.bindRainfallAvg("", this.model.setRainfallAvg, this.model.updateRainfallAvg)
         this.apiHandler.bindCatchment("", this.model.setCatchment)
         this.apiHandler.bindSensors("", this.model.setSensors)
         this.apiHandler.bindHotspots("", this.model.setHotspots)
+        
 
       }
 
