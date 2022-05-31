@@ -97,7 +97,7 @@
           .attr("text-anchor", "end")
           .attr("y", 6)
           .attr("dy", "-3em")
-          .attr("fill", "white")
+          // .attr("fill", "white")
           .attr("transform", "rotate(-90)")
           .text(this.yAxisTitle)
       }
@@ -172,7 +172,7 @@
       }
 
       async fetchRetry(url) {
-        const retriesLeft = 5
+        let retriesLeft = 5
         while (retriesLeft > 0) {
           const response = await fetch(url)
           if (response.ok) { return response }
