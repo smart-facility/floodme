@@ -168,6 +168,18 @@
     class ApiHandler {
       constructor() {
         this.dateRange = {}
+        this.retries = 5
+      }
+
+      async fetchRetry(url) {
+        const retriesLeft = 5
+        while (retriesLeft > 0) {
+          const response = await fetch(url)
+          if (response.ok) { return response }
+          retriesLeft -= 1
+        }
+        return "error"
+
       }
 
       bindDateRange() {
@@ -175,33 +187,32 @@
       }
 
       async bindCatchment(apiRef, setCatchment) {
-        const json = await fetch(api_endpoint+"catchment").then(response => response.json())
+        const json = await this.fetchRetry(api_endpoint+"catchment").then(response => response.json())
         setCatchment(json)
       }
 
       async bindSensors(apiRef, setSensors) {
-        const json = await fetch(api_endpoint+"sensors").then(response => response.json())
+        const json = await this.fetchRetry(api_endpoint+"sensors").then(response => response.json())
         setSensors(json)
       }
 
       async bindHotspots(apiRef, setHotspots) {
-        const json = await fetch(api_endpoint+"hotspots").then(response => response.json())
+        const json = await this.fetchRetry(api_endpoint+"hotspots").then(response => response.json())
         setHotspots(json)
       }
 
       async bindRadar(apiRef, setRadar, updateRadar) {
-        const json = await fetch(api_endpoint+`rainfall?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
-        //console.log(json)
+        const json = await this.fetchRetry(api_endpoint+`rainfall?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
         setRadar(json)
       }
 
       async bindLevels(apiRef, setLevels, updateLevels) {
-        const json = await fetch(api_endpoint+`sensors/data?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
+        const json = await this.fetchRetry(api_endpoint+`sensors/data?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
         setLevels(json)
       }
 
       async bindRainfallAvg(apiRef, setRainfallAvg, updateRainfallAvg) {
-        const json = await fetch(api_endpoint+`rainfall/avg?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
+        const json = await this.fetchRetry(api_endpoint+`rainfall/avg?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
         setRainfallAvg(json)
       }
     }
