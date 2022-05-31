@@ -13,12 +13,11 @@
 
   <style>
     body {
-            font-family: "Helvetica Neue", Helvetica, sans-serif;
-            font-size: 14px;
-            color: #333;
-            background-color: #bbb;
-        }
-    #map {height:min(60vw, 75vh); width:min(60vw, 75vh);}
+      font-family: "Helvetica Neue", Helvetica, sans-serif;
+      font-size: 14px;
+      color: #333;
+      background-color: #bbb;
+    }
   </style>
 </head>
 <body>
@@ -32,8 +31,8 @@
         You can also hover over the graph of the average rainfall from BOM(mm/hr)
         (currently historical data only) to update the map display of rain clouds
     </p> -->
-    <div id="map"></div>
   </div>
+  <div id="root"></div>
   
   </div>
   <script>
@@ -178,8 +177,8 @@
           if (response.ok) { return response }
           retriesLeft -= 1
         }
+        console.error(`failed to load ${url} after ${this.retries} retries.`)
         return "error"
-
       }
 
       bindDateRange() {
@@ -340,8 +339,16 @@
 
     class View {
       constructor() {
+        this.root = document.createElement("div")
+
+        this.mapContainer = document.createElement("div")
+        this.mapContainer.style.height = "min(60vw, 75vh)"
+        this.mapContainer.style.width = "min(60vw, 75vh)"
+
+        this.root.append(this.mapContainer)
+
         this.map = new mapboxgl.Map({
-          container: 'map',
+          container: this.mapContainer,
           style: 'https://api.maptiler.com/maps/topo/style.json?key=TGgOfxJrRHJvzjeiOdhm',
           //style: 'mapbox://styles/natohutch/cl1vptxmu000i16pnii0nk61a',
           center: [150.88,-34.4],
@@ -380,8 +387,19 @@
           this.map.addControl(new mapboxgl.NavigationControl())
         })
 
+            
+
+        this.map.on("render", () => {
+          this.map.resize()
+        })
+          
+
         this.chart = new Chart("Water Level Sensor Reading (mAHD)")
         this.chart.createGraph([])
+      }
+
+      getRoot() {
+        return this.root
       }
 
       bindClickSensor = (func) => {
@@ -400,7 +418,7 @@
 
         const rainfallChart = new Chart("BOM Average Rainfall (mm/hr)", 720)
         rainfallChart.createGraph2(selected)
-        document.body.getElementsByTagName("div")[0].append(rainfallChart.graph.node())
+        this.root.append(rainfallChart.graph.node())
 
       }
 
@@ -599,14 +617,9 @@
     const api_endpoint = window.location.origin+"/api/"
 
     const controller = new Controller(new Model(), new View())
-    window.controller = controller  
+    window.controller = controller
 
-    
-
-    // map.on("render", () => {
-    //   map.resize()
-    // })
-      
+    document.getElementById("root").append(controller.view.getRoot())
   </script>
 </body>
 </html>
