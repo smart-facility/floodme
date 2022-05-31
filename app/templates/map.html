@@ -420,7 +420,7 @@
       }
 
       onSetCatchment = () => {
-        this.map.addSource("catchment", {
+        this.view.map.addSource("catchment", {
           type: "geojson",
           data: this.model.catchment
         })
