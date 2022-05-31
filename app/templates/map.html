@@ -193,6 +193,46 @@
       }
     }
 
+    class DateRangeSelector {
+      constructor() {
+        this.dateRange = {}
+
+        this.root = document.createElement("div")
+        this.form = document.createElement("form")
+
+        this.startDateSelector = document.createElement("input")
+        this.startDateSelector.type = "date"
+
+        this.endDateSelector = document.createElement("input")
+        this.endDateSelector.type = "date"
+
+        this.button = document.createElement("button")
+        this.button.textContent = "Set Date Range"
+
+        this.form.append(this.startDateSelector, this.endDateSelector, this.button)
+
+        this.root.append(this.form)
+
+      }
+
+      getRoot() {
+        return this.root
+      }
+
+      bindSetDateRange(func) {
+        this.form.addEventListener("submit", e => {
+          e.preventDefault()
+
+          const dateRange = {
+            start: this.startDateSelector.value,
+            end: this.endDateSelector.value
+          }
+
+          func(dateRange)
+        })
+      }
+    }
+
     class ApiHandler {
       constructor() {
         this.dateRange = {}
@@ -388,6 +428,9 @@
       constructor() {
         this.root = document.createElement("div")
 
+        this.dateRangeSelector = new DateRangeSelector()
+        this.root.append(this.dateRangeSelector.getRoot())
+
         this.mapContainer = document.createElement("div")
         this.mapContainer.style.height = "min(60vw, 75vh)"
         this.mapContainer.style.width = "min(60vw, 75vh)"
@@ -397,7 +440,6 @@
         this.map = new mapboxgl.Map({
           container: this.mapContainer,
           style: 'https://api.maptiler.com/maps/topo/style.json?key=TGgOfxJrRHJvzjeiOdhm',
-          //style: 'mapbox://styles/natohutch/cl1vptxmu000i16pnii0nk61a',
           center: [150.88,-34.4],
           zoom: 13,
           maxBounds: [
@@ -421,25 +463,13 @@
           this.map.getCanvas().style.cursor = 'default'
         })
 
-        // mapboxgl.accessToken = 'pk.eyJ1IjoibmF0b2h1dGNoIiwiYSI6ImNsMW85cmxsbjEyZTQzYnM5ZXhvdm53MHoifQ.7tChnQlrKf5gGk-ATFiPGg'
-        // You can remove the following line if you don't need support for RTL (right-to-left) labels:
-        //mapboxgl.setRTLTextPlugin('https://cdn.maptiler.com/mapbox-gl-js/plugins/mapbox-gl-rtl-text/v0.2.3/mapbox-gl-rtl-text.js'); 
-
-        
-        this.map.on("load", () => {
-          // let target = map.getStyle().layers[15]
-          // map.moveLayer("catchment", target.id)
-          // map.moveLayer("catchment-outline", target.id)
-          
+        this.map.on("load", () => {          
           this.map.addControl(new mapboxgl.NavigationControl())
         })
-
-            
 
         this.map.on("render", () => {
           this.map.resize()
         })
-          
 
         this.chart = new Chart("Water Level Sensor Reading (mAHD)")
         this.chart.createGraph([])
@@ -523,10 +553,10 @@
         this.model = model
         this.view = view
 
-        this.view.bindClickSensor(this.handleClickSensor)
-
         this.apiHandler = new ApiHandler()
-        
+
+        this.view.bindClickSensor(this.handleClickSensor)
+        this.view.dateRangeSelector.bindSetDateRange(this.model.setDateRange)
 
         this.model.bindSetRainfallAvg(this.onSetRainfallAvg)
         this.model.bindUpdateRainfallAvg(this.onUpdateRainfallAvg)
