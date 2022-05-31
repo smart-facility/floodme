@@ -103,64 +103,93 @@
 
       updateGraph = (data) => {
 
-          this.x = d3.scaleTime()
-            .domain(d3.extent(data, d => d.stamp))
-            .range([ 0, this.width ])
+        this.x = d3.scaleTime()
+          .domain(d3.extent(data, d => d.stamp))
+          .range([ 0, this.width ])
 
-          this.y = d3.scaleLinear()
-            .domain([d3.min(data, d => +d.level)-0.5, d3.max(data, d => +d.level)+0.5])
-            .range([ this.height, 0 ])
-          
-          this.group.selectAll("g #xaxis")
-            .call(d3.axisBottom(this.x))
+        this.y = d3.scaleLinear()
+          .domain([d3.min(data, d => +d.level)-0.5, d3.max(data, d => +d.level)+0.5])
+          .range([ this.height, 0 ])
+        
+        this.group.selectAll("g #xaxis")
+          .call(d3.axisBottom(this.x))
 
-          this.group.selectAll("g #yaxis")
-            .call(d3.axisLeft(this.y))
-          
-          this.group.select("path#data")
-            .datum(data)
-            .attr("fill", "none")
-            .attr("stroke", "steelblue")
-            .attr("stroke-width", 1.5)
-            .attr("d", d3.line()
-                .x(d => this.x(d.stamp))
-                .y(d => this.y(d.level))
-              )
+        this.group.selectAll("g #yaxis")
+          .call(d3.axisLeft(this.y))
+        
+        this.group.select("path#data")
+          .datum(data)
+          .attr("fill", "none")
+          .attr("stroke", "steelblue")
+          .attr("stroke-width", 1.5)
+          .attr("d", d3.line()
+            .x(d => this.x(d.stamp))
+            .y(d => this.y(d.level))
+          )
       }
 
       createGraph2 = (data) => {
                 
-        let x = d3.scaleTime()
-            .domain(d3.extent(data, d => d.stamp))
-            .range([ 0, this.width ]);
+        this.x = d3.scaleTime()
+          .domain(d3.extent(data, d => d.stamp))
+          .range([ 0, this.width ])
         this.group.append("g")
-            .attr("transform", "translate(0," + this.height + ")")
-            .call(d3.axisBottom(x));
+          .attr("id", "xaxis")
+          .attr("transform", "translate(0," + this.height + ")")
+          .call(d3.axisBottom(this.x));
 
-        let y = d3.scaleLinear()
-            .domain([0, d3.max(data, d => +d.avg)])
-            .range([ this.height, 0 ]);
+        this.y = d3.scaleLinear()
+          .domain([0, d3.max(data, d => +d.avg)])
+          .range([ this.height, 0 ]);
         this.group.append("g")
-            .call(d3.axisLeft(y));
+          .attr("id", "yaxis")
+          .call(d3.axisLeft(this.y));
 
         this.group.append("path")
-            .attr("id", "data")
-            .datum(data)
-            .attr("fill", "none")
-            .attr("stroke", "steelblue")
-            .attr("stroke-width", 1.5)
-            .attr("d", d3.line()
-                .x(d => x(d.stamp))
-                .y(d => y(d.avg))
-            )
+          .attr("id", "data")
+          .datum(data)
+          .attr("fill", "none")
+          .attr("stroke", "steelblue")
+          .attr("stroke-width", 1.5)
+          .attr("d", d3.line()
+              .x(d => this.x(d.stamp))
+              .y(d => this.y(d.avg))
+          )
 
         this.group.append("text")
-            .attr("class", "y label")
-            .attr("text-anchor", "end")
-            .attr("y", 6)
-            .attr("dy", "-3em")
-            .attr("transform", "rotate(-90)")
-            .text(this.yAxisTitle)
+          .attr("class", "y label")
+          .attr("text-anchor", "end")
+          .attr("y", 6)
+          .attr("dy", "-3em")
+          .attr("transform", "rotate(-90)")
+          .text(this.yAxisTitle)
+      }
+
+      updateGraph2 = (data) => {
+        this.x = d3.scaleTime()
+          .domain(d3.extent(data, d => d.stamp))
+          .range([ 0, this.width ])
+
+        this.y = d3.scaleLinear()
+          .domain([0, d3.max(data, d => +d.avg)])
+          .range([ this.height, 0 ])
+
+        this.group.selectAll("g #xaxis")
+          .call(d3.axisBottom(this.x))
+
+        this.group.selectAll("g #yaxis")
+          .call(d3.axisLeft(this.y))
+
+        this.group.select("path#data")
+          .datum(data)
+          .attr("fill", "none")
+          .attr("stroke", "steelblue")
+          .attr("stroke-width", 1.5)
+          .attr("d", d3.line()
+              .x(d => this.x(d.stamp))
+              .y(d => this.y(d.avg))
+          )
+
       }
     }
 
@@ -226,7 +255,7 @@
         setRainfallAvg(json)
         this.onSetDateRange.push(async () => {
           const json = await this.fetchRetry(api_endpoint+`rainfall/avg?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
-          // updateRainfallAvg(json)
+          updateRainfallAvg(json)
         })
       }
     }
@@ -414,6 +443,8 @@
 
         this.chart = new Chart("Water Level Sensor Reading (mAHD)")
         this.chart.createGraph([])
+
+        this.rainfallChart = {}
       }
 
       getRoot() {
@@ -434,14 +465,21 @@
             d.avg = (d.avg/300)*3600
         })
 
-        const rainfallChart = new Chart("BOM Average Rainfall (mm/hr)", 720)
-        rainfallChart.createGraph2(selected)
-        this.root.append(rainfallChart.graph.node())
+        this.rainfallChart = new Chart("BOM Average Rainfall (mm/hr)", 720)
+        this.rainfallChart.createGraph2(selected)
+        this.root.append(this.rainfallChart.graph.node())
 
       }
 
       updateRainfallChart(data) {
+        const stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
+        const selected = JSON.parse(JSON.stringify(data))
+        selected.forEach(d => {
+            d.stamp = stringtodate(d.stamp)
+            d.avg = (d.avg/300)*3600
+        })
 
+        this.rainfallChart.updateGraph2(selected)
       }
 
       displayPopupChart(e, data, sensors) {
