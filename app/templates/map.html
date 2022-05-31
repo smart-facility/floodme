@@ -97,7 +97,7 @@
           .attr("text-anchor", "end")
           .attr("y", 6)
           .attr("dy", "-3em")
-          // .attr("fill", "white")
+          .attr("fill", "white")
           .attr("transform", "rotate(-90)")
           .text(this.yAxisTitle)
       }
@@ -339,14 +339,53 @@
     }
 
     class View {
-      constructor(map) {
-        this.map = map
+      constructor() {
+        this.map = new mapboxgl.Map({
+          container: 'map',
+          style: 'https://api.maptiler.com/maps/topo/style.json?key=TGgOfxJrRHJvzjeiOdhm',
+          //style: 'mapbox://styles/natohutch/cl1vptxmu000i16pnii0nk61a',
+          center: [150.88,-34.4],
+          zoom: 13,
+          maxBounds: [
+              [150.73,-34.49],
+              [151,-34.32]
+          ]
+        })
+        this.map.getCanvas().style.cursor = 'default'
+
+        this.map.on('mouseenter', 'sensors', () => {
+          this.map.getCanvas().style.cursor = 'pointer'
+        })
+        this.map.on('mouseleave', 'sensors', () => {
+          this.map.getCanvas().style.cursor = 'default'
+        })
+
+        this.map.on('mouseenter', 'hotspots', () => {
+          this.map.getCanvas().style.cursor = 'pointer'
+        })
+        this.map.on('mouseleave', 'hotspots', () => {
+          this.map.getCanvas().style.cursor = 'default'
+        })
+
+        // mapboxgl.accessToken = 'pk.eyJ1IjoibmF0b2h1dGNoIiwiYSI6ImNsMW85cmxsbjEyZTQzYnM5ZXhvdm53MHoifQ.7tChnQlrKf5gGk-ATFiPGg'
+        // You can remove the following line if you don't need support for RTL (right-to-left) labels:
+        //mapboxgl.setRTLTextPlugin('https://cdn.maptiler.com/mapbox-gl-js/plugins/mapbox-gl-rtl-text/v0.2.3/mapbox-gl-rtl-text.js'); 
+
+        
+        this.map.on("load", () => {
+          // let target = map.getStyle().layers[15]
+          // map.moveLayer("catchment", target.id)
+          // map.moveLayer("catchment-outline", target.id)
+          
+          this.map.addControl(new mapboxgl.NavigationControl())
+        })
+
         this.chart = new Chart("Water Level Sensor Reading (mAHD)")
         this.chart.createGraph([])
       }
 
       bindClickSensor = (func) => {
-        map.on("click", "sensors", e => {
+        this.map.on("click", "sensors", e => {
           func(e)
         })
       }
@@ -470,9 +509,9 @@
           "level_sensor.png",
           (error, image) => {
             if (error) throw error
-            map.addImage("level_sensor", image, {sdf: false})
+            this.view.map.addImage("level_sensor", image, {sdf: false})
 
-            map.addLayer({
+            this.view.map.addLayer({
               "id": "sensors",
               "type": "symbol",
               "source": "sensors",
@@ -559,48 +598,10 @@
   <script>
     const api_endpoint = window.location.origin+"/api/"
 
-    const map = new mapboxgl.Map({
-      container: 'map',
-      style: 'https://api.maptiler.com/maps/topo/style.json?key=TGgOfxJrRHJvzjeiOdhm',
-      //style: 'mapbox://styles/natohutch/cl1vptxmu000i16pnii0nk61a',
-      center: [150.88,-34.4],
-      zoom: 13,
-      maxBounds: [
-          [150.73,-34.49],
-          [151,-34.32]
-      ]
-    })
-    map.getCanvas().style.cursor = 'default'
-
-    map.on('mouseenter', 'sensors', () => {
-      map.getCanvas().style.cursor = 'pointer'
-    })
-    map.on('mouseleave', 'sensors', () => {
-      map.getCanvas().style.cursor = 'default'
-    })
-
-    map.on('mouseenter', 'hotspots', () => {
-      map.getCanvas().style.cursor = 'pointer'
-    })
-    map.on('mouseleave', 'hotspots', () => {
-      map.getCanvas().style.cursor = 'default'
-    })
-
-    // mapboxgl.accessToken = 'pk.eyJ1IjoibmF0b2h1dGNoIiwiYSI6ImNsMW85cmxsbjEyZTQzYnM5ZXhvdm53MHoifQ.7tChnQlrKf5gGk-ATFiPGg'
-    // You can remove the following line if you don't need support for RTL (right-to-left) labels:
-    //mapboxgl.setRTLTextPlugin('https://cdn.maptiler.com/mapbox-gl-js/plugins/mapbox-gl-rtl-text/v0.2.3/mapbox-gl-rtl-text.js');
-
-    const controller = new Controller(new Model(), new View(map))
-    window.controller = controller   
+    const controller = new Controller(new Model(), new View())
+    window.controller = controller  
 
     
-    map.on("load", () => {
-      // let target = map.getStyle().layers[15]
-      // map.moveLayer("catchment", target.id)
-      // map.moveLayer("catchment-outline", target.id)
-      
-      map.addControl(new mapboxgl.NavigationControl())
-    })
 
     // map.on("render", () => {
     //   map.resize()
