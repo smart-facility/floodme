@@ -420,12 +420,12 @@
       }
 
       onSetCatchment = () => {
-        window.map.addSource("catchment", {
+        this.map.addSource("catchment", {
           type: "geojson",
           data: this.model.catchment
         })
 
-        map.addLayer({
+        this.view.map.addLayer({
           "id": "catchment",
           "type": "fill",
           "source": "catchment",
@@ -436,7 +436,7 @@
           }
         })
 
-        map.addLayer({
+        this.view.map.addLayer({
           "id": "catchment-outline",
           "type": "line",
           "source": "catchment",
@@ -450,12 +450,12 @@
 
       onSetSensors = () => {
 
-        map.addSource("sensors", {
+        this.view.map.addSource("sensors", {
           type: "geojson",
           data: this.model.sensors
         })
 
-        map.loadImage(
+        this.view.map.loadImage(
           "level_sensor.png",
           (error, image) => {
             if (error) throw error
@@ -480,12 +480,12 @@
       }
 
       onSetHotspots = () => {
-        map.addSource("hotspots", {
+        this.view.map.addSource("hotspots", {
           type: "geojson",
           data: this.model.hotspots
         })
 
-        map.addLayer({
+        this.view.map.addLayer({
           "id": "hotspots",
           "type": "circle",
           "source": "hotspots",
@@ -509,7 +509,7 @@
           }
         })
 
-        map.on("click", "hotspots", e => {
+        this.view.map.on("click", "hotspots", e => {
 
           const coordinates = e.features[0].geometry.coordinates.slice()
         
@@ -574,8 +574,6 @@
     map.on('mouseleave', 'hotspots', () => {
       map.getCanvas().style.cursor = 'default'
     })
-
-    window.map = map
 
     // mapboxgl.accessToken = 'pk.eyJ1IjoibmF0b2h1dGNoIiwiYSI6ImNsMW85cmxsbjEyZTQzYnM5ZXhvdm53MHoifQ.7tChnQlrKf5gGk-ATFiPGg'
     // You can remove the following line if you don't need support for RTL (right-to-left) labels:
