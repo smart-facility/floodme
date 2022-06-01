@@ -72,7 +72,6 @@
           .attr("id", "xaxis")
           .attr("transform", "translate(0," + this.height + ")")
           .call(d3.axisBottom(this.x))
-
         this.y = d3.scaleLinear()
           .domain([d3.min(data, d => +d.level)-0.5, d3.max(data, d => +d.level)+0.5])
           .range([ this.height, 0 ]);
@@ -606,65 +605,80 @@
       }
 
       onSetSensors = () => {
+        const addLayer = () => {
+          this.view.map.loadImage(
+            "level_sensor.png",
+            (error, image) => {
+              if (error) throw error
+              this.view.map.addImage("level_sensor", image, {sdf: false})
+
+              this.view.map.addLayer({
+                "id": "sensors",
+                "type": "symbol",
+                "source": "sensors",
+                "layout": {
+                  "icon-image": "level_sensor",
+                  "icon-size": 0.035,
+                  "icon-allow-overlap": true,
+                },
+                "paint": {
+                  "icon-color": "blue"
+                }
+              })
+            }
+          )
+        }
 
         this.view.map.addSource("sensors", {
           type: "geojson",
           data: this.model.sensors
         })
 
-        this.view.map.loadImage(
-          "level_sensor.png",
-          (error, image) => {
-            if (error) throw error
-            this.view.map.addImage("level_sensor", image, {sdf: false})
-
-            this.view.map.addLayer({
-              "id": "sensors",
-              "type": "symbol",
-              "source": "sensors",
-              "layout": {
-                "icon-image": "level_sensor",
-                "icon-size": 0.035,
-                "icon-allow-overlap": true,
-              },
-              "paint": {
-                "icon-color": "blue"
-              }
-            })
-          }
-        )
+        if (this.view.map.isStyleLoaded()) {
+          addLayer()
+        } else {
+          this.view.map.on("load", addLayer)
+        }
 
       }
 
       onSetHotspots = () => {
+        const addLayer = () => {
+          this.view.map.addLayer({
+            "id": "hotspots",
+            "type": "circle",
+            "source": "hotspots",
+            "paint": {
+              "circle-color": [
+                "interpolate",
+                ["linear"],
+                ["get", "flood_depth"],
+                -0.5,
+                "yellow",
+                0,
+                "orange",
+                3,
+                "red",
+                6,
+                "darkred",
+                10,
+                "black"
+              ],
+              "circle-radius": 4
+            }
+          })
+        }
+
         this.view.map.addSource("hotspots", {
           type: "geojson",
           data: this.model.hotspots
         })
 
-        this.view.map.addLayer({
-          "id": "hotspots",
-          "type": "circle",
-          "source": "hotspots",
-          "paint": {
-            "circle-color": [
-              "interpolate",
-              ["linear"],
-              ["get", "flood_depth"],
-              -0.5,
-              "yellow",
-              0,
-              "orange",
-              3,
-              "red",
-              6,
-              "darkred",
-              10,
-              "black"
-            ],
-            "circle-radius": 4
-          }
-        })
+        if (this.view.map.isStyleLoaded()) {
+          addLayer()
+        } else {
+          this.view.map.on("load", addLayer)
+        }
 
         this.view.map.on("click", "hotspots", e => {
 
