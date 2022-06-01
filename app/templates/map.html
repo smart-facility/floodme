@@ -576,32 +576,43 @@
       }
 
       onSetCatchment = () => {
+        const addLayer = () => {
+          this.view.map.addLayer({
+            "id": "catchment",
+            "type": "fill",
+            "source": "catchment",
+            "paint": {
+              "fill-color": "green",
+              "fill-opacity": 0.11,
+              "fill-outline-color": "darkgreen"
+            }
+          })
+
+          this.view.map.addLayer({
+            "id": "catchment-outline",
+            "type": "line",
+            "source": "catchment",
+            "paint": {
+              "line-color": "darkgreen",
+              "line-width": 2,
+              "line-opacity": 0.4,
+            }
+          })
+        }
+        
         this.view.map.addSource("catchment", {
           type: "geojson",
           data: this.model.catchment
         })
 
-        this.view.map.addLayer({
-          "id": "catchment",
-          "type": "fill",
-          "source": "catchment",
-          "paint": {
-            "fill-color": "green",
-            "fill-opacity": 0.11,
-            "fill-outline-color": "darkgreen"
+        const waiting = () => {
+          if (!this.view.map.isStyleLoaded()) {
+            setTimeout(waiting, 200)
+          } else {
+            addLayer()
           }
-        })
-
-        this.view.map.addLayer({
-          "id": "catchment-outline",
-          "type": "line",
-          "source": "catchment",
-          "paint": {
-            "line-color": "darkgreen",
-            "line-width": 2,
-            "line-opacity": 0.4,
-          }
-        })
+        }
+        waiting()
       }
 
       onSetSensors = () => {
@@ -634,11 +645,14 @@
           data: this.model.sensors
         })
 
-        if (this.view.map.isStyleLoaded()) {
-          addLayer()
-        } else {
-          this.view.map.on("load", addLayer)
+        const waiting = () => {
+          if (!this.view.map.isStyleLoaded()) {
+            setTimeout(waiting, 200)
+          } else {
+            addLayer()
+          }
         }
+        waiting()
 
       }
 
@@ -674,11 +688,14 @@
           data: this.model.hotspots
         })
 
-        if (this.view.map.isStyleLoaded()) {
-          addLayer()
-        } else {
-          this.view.map.on("load", addLayer)
+        const waiting = () => {
+          if (!this.view.map.isStyleLoaded()) {
+            setTimeout(waiting, 200)
+          } else {
+            addLayer()
+          }
         }
+        waiting()
 
         this.view.map.on("click", "hotspots", e => {
 
