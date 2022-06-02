@@ -643,9 +643,16 @@
         this.model.bindSetDateRange(this.apiHandler.setDateRange)
         this.model.bindSetSelectedTime(this.apiHandler.setSelectedTime)
 
+        const daysBack = 1
+        const liveDate = new Date()
+        liveDate.setHours(liveDate.getHours()+(liveDate.getTimezoneOffset()/-60))
+        const liveDateMinus24h = new Date(liveDate - 1000*60*60*24*daysBack)
+        const liveStartDate = liveDateMinus24h.toJSON()
+        const liveEndDate = liveDate.toJSON()
+
+        this.apiHandler.setDateRange({start: liveStartDate, end: liveEndDate})
+        this.apiHandler.setSelectedTime(liveStartDate)
         // this.apiHandler.bindRadar("", this.model.setRadar, this.model.updateRadar)
-        this.apiHandler.setDateRange({start: "20200207", end: "20200208"})
-        this.apiHandler.setSelectedTime("20220601T1300")
         this.apiHandler.bindLevels("", this.model.setLevels, this.model.updateLevels)
         this.apiHandler.bindRainfallAvg("", this.model.setRainfallAvg, this.model.updateRainfallAvg)
         this.apiHandler.bindCatchment("", this.model.setCatchment)
