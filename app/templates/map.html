@@ -232,6 +232,40 @@
       }
     }
 
+    class DatetimeSelector {
+      constructor() {
+        this.datetime = ""
+
+        this.root = document.createElement("div")
+        this.form = document.createElement("form")
+
+        this.datetimeSelector = document.createElement("input")
+        this.datetimeSelector.type = "datetime-local"
+
+        this.button = document.createElement("button")
+        this.button.textContent = "Set Time"
+
+        this.form.append(this.datetimeSelector, this.button)
+
+        this.root.append(this.form)
+
+      }
+
+      getRoot() {
+        return this.root
+      }
+
+      bindSetDatetime(func) {
+        this.form.addEventListener("submit", e => {
+          e.preventDefault()
+
+          const datetime = this.datetimeSelector.value
+
+          func(datetime)
+        })
+      }
+    }
+
     class ApiHandler {
       constructor() {
         this.dateRange = {}
@@ -469,6 +503,9 @@
         this.dateRangeSelector = new DateRangeSelector()
         this.root.append(this.dateRangeSelector.getRoot())
 
+        this.datetimeSelector = new DatetimeSelector()
+        this.root.append(this.datetimeSelector.getRoot())
+
         this.mapContainer = document.createElement("div")
         this.mapContainer.style.height = "min(60vw, 75vh)"
         this.mapContainer.style.width = "min(60vw, 75vh)"
@@ -595,6 +632,7 @@
 
         this.view.bindClickSensor(this.handleClickSensor)
         this.view.dateRangeSelector.bindSetDateRange(this.model.setDateRange)
+        this.view.datetimeSelector.bindSetDatetime(this.model.setSelectedTime)
 
         this.model.bindSetRainfallAvg(this.onSetRainfallAvg)
         this.model.bindUpdateRainfallAvg(this.onUpdateRainfallAvg)
