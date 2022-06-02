@@ -147,6 +147,22 @@ def hotspot():
         """))
 
     return jsonify(result.all()[0][0])
+
+@app.route("/api/hotspots/at")
+def hotspots_at():
+    """a"""
+    startdate = str(request.args["startdate"])
+    enddate = str(request.args["enddate"])
+    with engine.connect() as conn:
+        result = conn.execute(text("""
+        SELECT json_build_object(
+            'type', 'FeatureCollection',
+            'features', json_agg(st_asgeojson(t.*)::json)
+        )
+        FROM
+        (SELECT st_force2d(geom) AS geom, current_flood_z - floor_z AS flood_depth FROM properties WHERE floor_z - 0.5 < current_flood_z) AS t
+        """))
+
     
 
 

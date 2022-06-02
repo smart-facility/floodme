@@ -576,6 +576,11 @@
       }
 
       onSetCatchment = () => {
+        this.view.map.addSource("catchment", {
+          type: "geojson",
+          data: this.model.catchment
+        })
+
         const addLayer = () => {
           this.view.map.addLayer({
             "id": "catchment",
@@ -599,11 +604,6 @@
             }
           })
         }
-        
-        this.view.map.addSource("catchment", {
-          type: "geojson",
-          data: this.model.catchment
-        })
 
         const waiting = () => {
           if (!this.view.map.isStyleLoaded()) {
@@ -617,6 +617,11 @@
 
       onSetSensors = () => {
         const addLayer = () => {
+          this.view.map.addSource("sensors", {
+            type: "geojson",
+            data: this.model.sensors
+          })
+
           this.view.map.loadImage(
             "level_sensor.png",
             (error, image) => {
@@ -640,11 +645,6 @@
           )
         }
 
-        this.view.map.addSource("sensors", {
-          type: "geojson",
-          data: this.model.sensors
-        })
-
         const waiting = () => {
           if (!this.view.map.isStyleLoaded()) {
             setTimeout(waiting, 200)
@@ -658,6 +658,11 @@
 
       onSetHotspots = () => {
         const addLayer = () => {
+          this.view.map.addSource("hotspots", {
+            type: "geojson",
+            data: this.model.hotspots
+          })
+
           this.view.map.addLayer({
             "id": "hotspots",
             "type": "circle",
@@ -682,11 +687,6 @@
             }
           })
         }
-
-        this.view.map.addSource("hotspots", {
-          type: "geojson",
-          data: this.model.hotspots
-        })
 
         const waiting = () => {
           if (!this.view.map.isStyleLoaded()) {
