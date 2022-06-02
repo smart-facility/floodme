@@ -74,7 +74,10 @@ def rainfall():
             WHERE val > 0 AND stamp BETWEEN :start AND :end) AS t(geom, val, stamp)
         """), {"start": startdate, "end": enddate})
 
-        return jsonify(result.all()[0][0])
+        results = result.all()[0][0]
+        if (results["features"] == None):
+            results["features"] = []
+        return jsonify(results)
 
 @app.route("/api/rainfall/avg")
 def rainfall_avg():
@@ -97,7 +100,10 @@ def rainfall_avg():
             WHERE stamp BETWEEN :start AND :end) AS t(avg, stamp)
         """), {"start": startdate, "end": enddate})
     
-        return jsonify(result.all()[0][0])
+        results = result.all()[0][0]
+        if (results["features"] == None):
+            results["features"] = []
+        return jsonify(results)
 
 
 @app.route("/api/sensors")
@@ -131,7 +137,10 @@ def sensors_data():
             (SELECT id, level, stamp FROM sensor_levels WHERE stamp BETWEEN :start AND :end ORDER BY stamp ASC) as t(id, level, stamp)
         """),{"start": startdate, "end": enddate})
 
-        return jsonify(result.all()[0][0])
+        results = result.all()[0][0]
+        if (results["features"] == None):
+            results["features"] = []
+        return jsonify(results)
 
 @app.route("/api/hotspots")
 def hotspot():
@@ -194,7 +203,10 @@ SELECT stamp, ground_z, floor_z, flood_z, flood_z - floor_z AS flood_depth, link
         ) AS t
         """), {"time": time})
 
-    return jsonify(result.all()[0][0])
+    results = result.all()[0][0]
+    if (results["features"] == None):
+        results["features"] = []
+    return jsonify(results)
 
     
 
