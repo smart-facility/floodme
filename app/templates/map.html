@@ -235,9 +235,11 @@
     class ApiHandler {
       constructor() {
         this.dateRange = {}
+        this.selectedTime = ""
         this.retries = 5
 
         this.onSetDateRange = []
+        this.onSetSelectedTime = []
       }
 
       async fetchRetry(url) {
@@ -260,6 +262,14 @@
 
       }
 
+      setSelectedTime = (time) => {
+        this.selectedTime = time
+
+        for (const func of this.onSetSelectedTime) {
+          func()
+        }
+      }
+
       async bindCatchment(apiRef, setCatchment) {
         const json = await this.fetchRetry(api_endpoint+"catchment").then(response => response.json())
         setCatchment(json)
@@ -270,9 +280,13 @@
         setSensors(json)
       }
 
-      async bindHotspots(apiRef, setHotspots) {
-        const json = await this.fetchRetry(api_endpoint+"hotspots").then(response => response.json())
+      async bindHotspots(apiRef, setHotspots, updateHotspots) {
+        const json = await this.fetchRetry(api_endpoint+`hotspots/at?time=${this.selectedTime}`).then(response => response.json())
         setHotspots(json)
+        this.onSetSelectedTime.push(async () => {
+          const json = await this.fetchRetry(api_endpoint+`hotspots/at?time=${this.selectedTime}`).then(response => response.json())
+          updateHotspots(json)
+        })
       }
 
       async bindRadar(apiRef, setRadar, updateRadar) {
@@ -302,6 +316,7 @@
     class Model {
       constructor() {
         this.dateRange = {}
+        this.selectedTime = ""
 
         this.catchment = {}
         this.sensors = {}
@@ -312,12 +327,14 @@
         this.rainfallAvg = {}
 
         this.onSetDateRange = []
+        this.onSetSelectedTime = []
 
         this.onSetCatchment = []
         this.onSetSensors = []
 
         this.onRadarChange = []
         this.onSetHotspots = []
+        this.onUpdateHotspots = []
         this.onLevelChange = []
         this.onSetRainfallAvg = []
         this.onUpdateRainfallAvg = []
@@ -356,6 +373,17 @@
         }
       }
 
+      bindSetSelectedTime = (func) => {
+        this.onSetSelectedTime.push(func)
+      }
+
+      setSelectedTime = (time) => {
+        this.selectedTime = time
+        for (const func of this.onSetSelectedTime) {
+          func(this.selectedTime)
+        }
+      }
+
       bindRadarChange = (func) => {
         this.onRadarChange.push(func)
       }
@@ -375,9 +403,20 @@
         this.onSetHotspots.push(func)
       }
 
+      bindUpdateHotspots = (func) => {
+        this.onUpdateHotspots.push(func)
+      }
+
       setHotspots = (data) => {
         this.hotspots = data
         for (const func of this.onSetHotspots) {
+          func(this.hotspots)
+        }
+      }
+
+      updateHotspots = (data) => {
+        this.hotspots = data
+        for (const func of this.onUpdateHotspots) {
           func(this.hotspots)
         }
       }
@@ -562,15 +601,18 @@
         this.model.bindSetCatchment(this.onSetCatchment)
         this.model.bindSetCatchment(this.onSetSensors)
         this.model.bindSetHotspots(this.onSetHotspots)
+        this.model.bindUpdateHotspots(this.onUpdateHotspots)
         this.model.bindSetDateRange(this.apiHandler.setDateRange)
+        this.model.bindSetSelectedTime(this.apiHandler.setSelectedTime)
 
         // this.apiHandler.bindRadar("", this.model.setRadar, this.model.updateRadar)
         this.apiHandler.setDateRange({start: "20200207", end: "20200208"})
+        this.apiHandler.setSelectedTime("20220601T1300")
         this.apiHandler.bindLevels("", this.model.setLevels, this.model.updateLevels)
         this.apiHandler.bindRainfallAvg("", this.model.setRainfallAvg, this.model.updateRainfallAvg)
         this.apiHandler.bindCatchment("", this.model.setCatchment)
         this.apiHandler.bindSensors("", this.model.setSensors)
-        this.apiHandler.bindHotspots("", this.model.setHotspots)
+        this.apiHandler.bindHotspots("", this.model.setHotspots, this.model.updateHotspots)
         
 
       }
@@ -715,6 +757,10 @@
             .addTo(this.view.map)
 
         })
+      }
+
+      onUpdateHotspots = data => {
+        this.view.map.getSource("hotspots").setData(data)
       }
 
       onSetRainfallAvg = () => {
