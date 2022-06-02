@@ -663,12 +663,12 @@
       }
 
       onSetCatchment = () => {
-        this.view.map.addSource("catchment", {
-          type: "geojson",
-          data: this.model.catchment
-        })
-
         const addLayer = () => {
+            this.view.map.addSource("catchment", {
+            type: "geojson",
+            data: this.model.catchment
+          })
+          
           this.view.map.addLayer({
             "id": "catchment",
             "type": "fill",
