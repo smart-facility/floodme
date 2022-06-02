@@ -151,8 +151,7 @@ def hotspot():
 @app.route("/api/hotspots/at")
 def hotspots_at():
     """a"""
-    startdate = str(request.args["startdate"])
-    enddate = str(request.args["enddate"])
+    time = str(request.args["time"])
     with engine.connect() as conn:
         result = conn.execute(text("""
         SELECT json_build_object(
@@ -160,8 +159,42 @@ def hotspots_at():
             'features', json_agg(st_asgeojson(t.*)::json)
         )
         FROM
-        (SELECT st_force2d(geom) AS geom, current_flood_z - floor_z AS flood_depth FROM properties WHERE floor_z - 0.5 < current_flood_z) AS t
-        """))
+        (
+            WITH
+time_selection AS (SELECT (:time)::timestamp AS time),
+latest AS (SELECT DISTINCT ON (id) stamp, id, level FROM sensor_levels WHERE stamp BETWEEN (SELECT time - INTERVAL '30min' FROM time_selection) AND (SELECT time FROM time_selection) ORDER BY id, stamp DESC),
+joined AS (SELECT stamp, id, name, ahd-level::float/1000 AS level, ahd, aep, geom FROM latest JOIN sensors using(id)),
+current_aeps AS
+(SELECT
+*,
+CASE
+	WHEN level > aep[6] THEN 'PMF'
+	WHEN level > aep[5] THEN '1pct'
+	WHEN level > aep[4] THEN '2pct'
+	WHEN level > aep[3] THEN '5pct'
+	WHEN level > aep[2] THEN '10pct'
+	WHEN level >= aep[1] THEN '20pct'
+END
+AS current_aep
+FROM joined),
+properties_with_aep AS (SELECT stamp, gid, current_aep, floor_z, ground_z, linked_sensor, st_force2d(properties.geom) AS geom FROM properties JOIN current_aeps ON linked_sensor = id),
+properties_with_levels AS
+(SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='PMF'), geom) AS flood_z, * FROM properties_with_aep WHERE current_aep = 'PMF'
+UNION
+SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='1pct'), geom) AS flood_z, * FROM properties_with_aep WHERE current_aep = '1pct'
+UNION
+SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='2pct'), geom) AS flood_z, * FROM properties_with_aep WHERE current_aep = '2pct'
+UNION
+SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='5pct'), geom) AS flood_z, * FROM properties_with_aep WHERE current_aep = '5pct'
+UNION
+SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='10pct'), geom) AS flood_z, * FROM properties_with_aep WHERE current_aep = '10pct'
+UNION
+SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='20pct'), geom) AS flood_z, * FROM properties_with_aep WHERE current_aep = '20pct')
+SELECT stamp, ground_z, floor_z flood_z, flood_z - floor_z AS flood_depth, linked_sensor, geom FROM properties_with_levels WHERE flood_z - floor_z > -0.5
+        ) AS t
+        """), {"time": time})
+
+    return jsonify(result.all()[0][0])
 
     
 
