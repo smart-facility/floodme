@@ -806,10 +806,9 @@
               <h2>Hotspot</h2>
               <h3>Updated: ${e.features[0].properties.stamp}</h3>
               <h3>Linked Sensor: ${e.features[0].properties.linked_sensor}</h3>
-              <h3>Ground Level: ${e.features[0].properties.ground_z}</h3>
               <h3>Floor Level: ${e.features[0].properties.floor_z}</h3>
-              <h3>Flood Level: ${e.features[0].properties.flood_z}</h3>
-              <h3>Flood Depth: ${e.features[0].properties.flood_depth}</h3>
+              <h3>Flood Level: ${e.features[0].properties.flood_z === -20 ? "--" : e.features[0].properties.flood_z}</h3>
+              <h3>Predicted Level: --</h3>
 
             `)
             .setMaxWidth(400)
