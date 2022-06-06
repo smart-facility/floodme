@@ -772,7 +772,13 @@
                 10,
                 "black"
               ],
-              "circle-radius": 4
+              "circle-radius": 4,
+              "circle-opacity": [
+                "case",
+                ["==", ["get", "flood_depth"], -20],
+                0.15,
+                1
+              ]
             }
           })
         }
