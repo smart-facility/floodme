@@ -116,7 +116,7 @@ def sensors():
                 'features', json_agg(st_asgeojson(t.*)::json)
             )
             FROM
-            (SELECT geom, id, ahd FROM sensors) AS t(geom, id, ahd)
+            (SELECT geom, id, ahd FROM sensors WHERE id NOT IN (10, 21)) AS t(geom, id, ahd)
         """))
 
         return jsonify(result.all()[0][0])
