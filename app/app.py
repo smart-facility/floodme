@@ -198,8 +198,10 @@ SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='5
 UNION
 SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='10pct'), geom) AS flood_z, * FROM properties_with_aep WHERE current_aep = '10pct'
 UNION
-SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='20pct'), geom) AS flood_z, * FROM properties_with_aep WHERE current_aep = '20pct')
-SELECT stamp, ground_z, floor_z, flood_z, flood_z - floor_z AS flood_depth, linked_sensor, geom FROM properties_with_levels WHERE flood_z - floor_z > -0.5
+SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='20pct'), geom) AS flood_z, * FROM properties_with_aep WHERE current_aep = '20pct'
+UNION
+SELECT null AS flood_z, * FROM properties_with_aep WHERE current_aep IS null)
+SELECT stamp, ground_z, floor_z, COALESCE(flood_z, -20) AS flood_z, COALESCE(flood_z - floor_z, -20) AS flood_depth, linked_sensor, geom FROM properties_with_levels WHERE geom IS NOT NULL--WHERE flood_z - floor_z > -0.5
         ) AS t
         """), {"time": time})
 
