@@ -38,3 +38,32 @@ jobs:
           file: ./dockerfile
           push: true
           tags: ${{secrets.DOCKER_HUB_USERNAME}}/floodme:latest
+  
+  deploy:
+    if: ${{ false }}
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: azure login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          
+      - name: deploy
+        uses: azure/aci-deploy@v1
+        
+        with:
+          resource-group: floodaware
+          location: 'australiaeast'
+          name: floodaware-api
+          dns-name-label: floodaware-api
+          image: natohutch/floodme
+          cpu: 0.5
+          memory: 0.5
+          ip-address: public
+          ports: 5000
+          secure-environment-variables: dbhost=${{ secrets.DBHOST }} dbpword=${{ secrets.DBPWORD }}
+          
+            
+    
+    
