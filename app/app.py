@@ -210,6 +210,31 @@ SELECT stamp, ground_z, floor_z, COALESCE(flood_z, -20) AS flood_z, COALESCE(flo
         results["features"] = []
     return jsonify(results)
 
+
+"""
+WITH
+time_selection AS (SELECT now()::timestamp AS time),
+latest AS (SELECT DISTINCT ON (id) stamp, id, level FROM sensor_levels WHERE stamp BETWEEN (SELECT time - INTERVAL '30min' FROM time_selection) AND (SELECT time FROM time_selection) ORDER BY id, stamp DESC),
+joined AS (SELECT stamp, id, name, ahd-level::float/1000 AS level, ahd, aep, geom FROM latest JOIN sensors using(id)),
+current_aeps AS
+(SELECT
+*,
+CASE
+	WHEN level > aep[6] THEN 'PMF'
+	WHEN level > aep[5] THEN '1pct'
+	WHEN level > aep[4] THEN '2pct'
+	WHEN level > aep[3] THEN '5pct'
+	WHEN level > aep[2] THEN '10pct'
+	WHEN level*2 >= aep[1] THEN '20pct'
+END
+AS current_aep
+FROM joined),
+road AS (SELECT road_points.geom, 11 AS linked_sensor, current_aeps.current_aep FROM road_points, catchment JOIN current_aeps ON 11 = current_aeps.id WHERE catchment.id in (9, 13, 33, 34, 44) AND st_contains(catchment.geom, road_points.geom))
+SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='20pct'), geom) AS flood_z, * FROM road WHERE current_aep = '20pct'
+--UNION
+--SELECT null AS flood_z, * FROM road WHERE current_aep IS null
+"""
+
     
 
 
