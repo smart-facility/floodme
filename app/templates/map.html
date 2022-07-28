@@ -960,6 +960,30 @@
         }
         waiting()
 
+        this.view.map.on("click", "infrastructure-depth", e => {
+
+          const coordinates = e.features[0].geometry.coordinates.slice()
+
+          while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+            coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360
+          }
+
+          new mapboxgl.Popup()
+            .setLngLat(coordinates)
+            .setHTML(`
+              <h2>Hotspot</h2>
+              <h3>Updated: ${e.features[0].properties.stamp}</h3>
+              <h3>Linked Sensor: ${e.features[0].properties.sensor}</h3>
+              <h3>Ground Level: ${e.features[0].properties.ground_z}</h3>
+              <h3>Flood Level: ${e.features[0].properties.flood_z === -20 ? "--" : e.features[0].properties.flood_z}</h3>
+              <h3>Predicted Level: --</h3>
+
+            `)
+            .setMaxWidth(400)
+            .addTo(this.view.map)
+
+        })
+
       }
 
       onUpdateInfrastructure = () => {

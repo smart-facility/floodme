@@ -232,7 +232,7 @@ current_aeps AS
 (SELECT
 *,
 CASE
-	WHEN 3*level > aep[6] THEN 'PMF'
+	WHEN 2*level > aep[6] THEN 'PMF'
 	WHEN level > aep[5] THEN '1pct'
 	WHEN level > aep[4] THEN '2pct'
 	WHEN level > aep[3] THEN '5pct'
@@ -257,7 +257,7 @@ UNION
  SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='PMF'), geom) AS flood_z, * FROM road_aep WHERE current_aep = 'PMF'
  UNION
 SELECT null AS flood_z, * FROM road_aep WHERE current_aep IS null)
-SELECT *, flood_z - ground_z AS flood_depth FROM points_with_levels WHERE flood_z > ground_z) AS t
+SELECT *, flood_z - ground_z, sensor AS flood_depth FROM points_with_levels WHERE flood_z > ground_z) AS t
 """
         ), {"time": time})
         results = result.all()[0][0]
