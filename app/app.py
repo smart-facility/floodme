@@ -257,7 +257,7 @@ UNION
  SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='PMF'), geom) AS flood_z, * FROM road_aep WHERE current_aep = 'PMF'
  UNION
 SELECT null AS flood_z, * FROM road_aep WHERE current_aep IS null)
-SELECT *, flood_z - ground_z, sensor AS flood_depth FROM points_with_levels WHERE flood_z > ground_z) AS t
+SELECT *, flood_z - ground_z AS flood_depth, sensor FROM points_with_levels WHERE flood_z > ground_z) AS t
 """
         ), {"time": time})
         results = result.all()[0][0]
