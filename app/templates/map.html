@@ -327,7 +327,7 @@
         const json = await this.fetchRetry(api_endpoint+`infrastructure?time=${this.selectedTime}`).then(response => response.json())
         setInfrastructure(json)
         this.onSetSelectedTime.push(async () => {
-          const json = await this.fetchRetry(api_endpoint+`infrastrucutre?time=${this.selectedTime}`).then(response => response.json())
+          const json = await this.fetchRetry(api_endpoint+`infrastructure?time=${this.selectedTime}`).then(response => response.json())
           updateInfrastructure(json)
         })
       }
