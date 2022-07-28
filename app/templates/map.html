@@ -323,6 +323,15 @@
         })
       }
 
+      async bindInfrastructure(apiRef, setInfrastructure, updateInfrastructure) {
+        const json = await this.fetchRetry(api_endpoint+`infrastructure?time=${this.selectedTime}`).then(response => response.json())
+        setInfrastructure(json)
+        this.onSetSelectedTime.push(async () => {
+          const json = await this.fetchRetry(api_endpoint+`infrastrucutre?time=${this.selectedTime}`).then(response => response.json())
+          updateInfrastructure(json)
+        })
+      }
+
       async bindRadar(apiRef, setRadar, updateRadar) {
         const json = await this.fetchRetry(api_endpoint+`rainfall?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
         setRadar(json)
@@ -359,6 +368,7 @@
         this.hotpsots = {}
         this.levels = {}
         this.rainfallAvg = {}
+        this.infrastructure = {}
 
         this.onSetDateRange = []
         this.onSetSelectedTime = []
@@ -372,6 +382,8 @@
         this.onLevelChange = []
         this.onSetRainfallAvg = []
         this.onUpdateRainfallAvg = []
+        this.onSetInfrastructure = []
+        this.onUpdateInfrastructure = []
       }
 
       bindSetCatchment = (func) => {
@@ -452,6 +464,28 @@
         this.hotspots = data
         for (const func of this.onUpdateHotspots) {
           func(this.hotspots)
+        }
+      }
+
+      bindSetInfrastructure = (func) => {
+        this.onSetInfrastructure.push(func)
+      }
+
+      bindUpdateInfrastructure = (func) => {
+        this.onUpdateInfrastructure.push(func)
+      }
+
+      setInfrastructure = (data) => {
+        this.infrastructure = data
+        for (const func of this.onSetInfrastructure) {
+          func(this.infrastructure)
+        }
+      }
+
+      updateInfrastructure = (data) => {
+        this.infrastructure = data
+        for (const func of this.onUpdateInfrastructure) {
+          func(this.infrastructure)
         }
       }
 
@@ -640,6 +674,8 @@
         this.model.bindSetCatchment(this.onSetSensors)
         this.model.bindSetHotspots(this.onSetHotspots)
         this.model.bindUpdateHotspots(this.onUpdateHotspots)
+        this.model.bindSetInfrastructure(this.onSetInfrastructure)
+        this.model.bindUpdateInfrastructure(this.onUpdateInfrastructure)
         this.model.bindSetDateRange(this.apiHandler.setDateRange)
         this.model.bindSetSelectedTime(this.apiHandler.setSelectedTime)
 
@@ -658,6 +694,7 @@
         this.apiHandler.bindCatchment("", this.model.setCatchment)
         this.apiHandler.bindSensors("", this.model.setSensors)
         this.apiHandler.bindHotspots("", this.model.setHotspots, this.model.updateHotspots)
+        this.apiHandler.bindInfrastructure("", this.model.setInfrastructure, this.model.updateInfrastructure)
         
 
       }
@@ -819,6 +856,75 @@
 
       onUpdateHotspots = data => {
         this.view.map.getSource("hotspots").setData(data)
+      }
+
+      onSetInfrastructure = () => {
+        const addLayer = () => {
+          this.view.map.addSource("infrastructure", {
+            type: "geojson",
+            data: this.model.infrastructure
+          })
+
+          this.view.map.addLayer({
+            "id": "infrastructure",
+            "type": "heatmap",
+            "source": "infrastructure",
+            "paint": {
+              'heatmap-weight': [
+                  'interpolate',
+                  ['linear'],
+                  ["get", "flood_depth"],
+                  0,
+                  0,
+                  6,
+                  10
+                  ],
+                  // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
+                  // Begin color ramp at 0-stop with a 0-transparancy color
+                  // to create a blur-like effect.
+                  'heatmap-color': [
+                  'interpolate',
+                  ['linear'],
+                  ['heatmap-density'],
+                  0,
+                  'rgba(33,102,172,0)',
+                  0.2,
+                  'rgb(103,169,207)',
+                  0.4,
+                  'rgb(209,229,240)',
+                  0.6,
+                  'rgb(253,219,199)',
+                  0.8,
+                  'rgb(239,138,255)',
+                  1,
+                  'rgb(178,24,255)'
+                  ],
+                  'heatmap-radius': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  0,
+                  3,
+                  9,
+                  4
+              ]
+            }
+          })
+        }
+
+        const waiting = () => {
+          if (!this.view.map.isStyleLoaded()) {
+            setTimeout(waiting, 200)
+          } else {
+            addLayer()
+          }
+        }
+        waiting()
+
+      }
+
+      onUpdateInfrastructure = () => {
+        this.view.map.getSource("infrastructure").setData(data)
       }
 
       onSetRainfallAvg = () => {

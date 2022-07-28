@@ -210,30 +210,61 @@ SELECT stamp, ground_z, floor_z, COALESCE(flood_z, -20) AS flood_z, COALESCE(flo
         results["features"] = []
     return jsonify(results)
 
-
-"""
+@app.route("/api/infrastructure")
+def infrastructure():
+    """a"""
+    time = str(request.args["time"])
+    with engine.connect() as conn:
+        result = conn.execute(text(
+            """
+            SELECT json_build_object(
+            'type', 'FeatureCollection',
+            'features', json_agg(st_asgeojson(t.*)::json)
+        )
+        FROM
+        (
 WITH
-time_selection AS (SELECT now()::timestamp AS time),
+time_selection AS (SELECT (:time)::timestamp AS time),
 latest AS (SELECT DISTINCT ON (id) stamp, id, level FROM sensor_levels WHERE stamp BETWEEN (SELECT time - INTERVAL '30min' FROM time_selection) AND (SELECT time FROM time_selection) ORDER BY id, stamp DESC),
 joined AS (SELECT stamp, id, name, ahd-level::float/1000 AS level, ahd, aep, geom FROM latest JOIN sensors using(id)),
+linked_sensors AS (SELECT * FROM (VALUES (1,12), (2,12), (4,12), (3,13), (7,13), (5,6), (6,6), (8,6), (35,6), (36,6), (10,14), (12,14), (15,14), (11,4), (9,11), (13,11), (33,11), (34,11), (44,11), (14,2), (23,2), (38,2), (16,39), (17,39), (18,39), (21,39), (32,41), (42,41), (24,38), (26,38), (40,38), (19,5), (20,5), (25,5), (43,5), (37,19), (29,9), (22,10), (27,10), (28,10), (47,10), (31,16), (39,16), (41,16), (45,16), (30,37), (46,37)) AS mapping (catchment, sensor)),
 current_aeps AS
 (SELECT
 *,
 CASE
-	WHEN level > aep[6] THEN 'PMF'
+	WHEN 3*level > aep[6] THEN 'PMF'
 	WHEN level > aep[5] THEN '1pct'
 	WHEN level > aep[4] THEN '2pct'
 	WHEN level > aep[3] THEN '5pct'
 	WHEN level > aep[2] THEN '10pct'
-	WHEN level*2 >= aep[1] THEN '20pct'
+	WHEN level >= aep[1] THEN '20pct'
 END
 AS current_aep
 FROM joined),
-road AS (SELECT road_points.geom, 11 AS linked_sensor, current_aeps.current_aep FROM road_points, catchment JOIN current_aeps ON 11 = current_aeps.id WHERE catchment.id in (9, 13, 33, 34, 44) AND st_contains(catchment.geom, road_points.geom))
-SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='20pct'), geom) AS flood_z, * FROM road WHERE current_aep = '20pct'
---UNION
---SELECT null AS flood_z, * FROM road WHERE current_aep IS null
+road AS (SELECT road_points.geom, road_points.catchment_id, linked_sensors.sensor, st_value((SELECT st_setsrid(rast, 4326) FROM dem), road_points.geom) AS ground_z FROM road_points JOIN linked_sensors ON road_points.catchment_id = linked_sensors.catchment),
+road_aep AS (SELECT road.geom, current_aeps.current_aep, road.ground_z, sensor, stamp FROM road JOIN current_aeps ON road.sensor = current_aeps.id),
+points_with_levels AS
+(SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='20pct'), geom) AS flood_z, * FROM road_aep WHERE current_aep = '20pct'
+UNION
+ SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='10pct'), geom) AS flood_z, * FROM road_aep WHERE current_aep = '10pct'
+ UNION
+ SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='5pct'), geom) AS flood_z, * FROM road_aep WHERE current_aep = '5pct'
+ UNION
+ SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='2pct'), geom) AS flood_z, * FROM road_aep WHERE current_aep = '2pct'
+ UNION
+ SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='1pct'), geom) AS flood_z, * FROM road_aep WHERE current_aep = '1pct'
+ UNION
+ SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='PMF'), geom) AS flood_z, * FROM road_aep WHERE current_aep = 'PMF'
+ UNION
+SELECT null AS flood_z, * FROM road_aep WHERE current_aep IS null)
+SELECT *, flood_z - ground_z AS flood_depth FROM points_with_levels WHERE flood_z > ground_z) AS t
 """
+        ), {"time": time})
+        results = result.all()[0][0]
+        if (results["features"] == None):
+            results["features"] = []
+    return jsonify(results)
+
 
     
 
