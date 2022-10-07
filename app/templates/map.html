@@ -22,11 +22,7 @@
 </head>
 <body>
   <div>
-    <h1>Floodaware Dashboard</h1>
-    <p>Welcome to the development build of the Floodaware dashboard</p>
-    <p>You can click on level icons to view information about the water level sensors,
-        all values are in m(AHD), the scale automatically adjusts for each sensor
-    </p>
+    <h1 style="margin-bottom:-10px; margin-top:-5px">Floodaware Dashboard</h1>
     <!-- <p>
         You can also hover over the graph of the average rainfall from BOM(mm/hr)
         (currently historical data only) to update the map display of rain clouds
@@ -212,6 +208,8 @@
 
         this.root.append(this.form)
 
+        this.root.style.display = "inline-block"
+
       }
 
       getRoot() {
@@ -248,6 +246,9 @@
         this.form.append(this.datetimeSelector, this.button)
 
         this.root.append(this.form)
+
+        this.root.style.marginLeft = "25px"
+        this.root.style.display = "inline-block"
 
       }
 
@@ -581,7 +582,7 @@
         this.root = document.createElement("div")
 
         this.mapContainer = document.createElement("div")
-        this.mapContainer.style.height = "min(60vw, 75vh)"
+        this.mapContainer.style.height = "min(58vw, 58vh)"
         this.mapContainer.style.width = "100%"
 
 
@@ -641,7 +642,7 @@
             name.style.display = "inline-block"
             input.style.display = "inline-block"
             div.style.display = "inline-block"
-            div.style.padding = "22px"
+            div.style.padding = "12px"
             this.box.append(div)
         }
 
@@ -726,6 +727,15 @@
         this.rainfallChart = new Chart("BOM Average Rainfall (mm/hr)", 720)
         this.rainfallChart.createGraph2(selected)
         this.root.append(this.rainfallChart.graph.node())
+        // const help = `
+        // Welcome to the development build of the Floodaware dashboard.
+        // You can click on level icons to view information about the water level sensors,
+        // all values are in m(AHD), the scale automatically adjusts for each sensor
+        // `
+        // const helper = document.createElement("div")
+        // helper.style.display = "inline-block"
+        // helper.innerHTML = help
+        // this.root.append(helper)
 
       }
 
