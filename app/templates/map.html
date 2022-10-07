@@ -352,10 +352,10 @@
       }
 
       async bindTransectsData(apiRef, setTransectsData, updateTransectsData) {
-        const json = await this.fetchRetry(api_endpoint+`transects/data`).then(response => response.json())
+        const json = await this.fetchRetry(api_endpoint+`transects/data?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
         setTransectsData(json)
         this.onSetDateRange.push(async () => {
-          const json = await this.fetchRetry(api_endpoint+`transects/data`).then(response => response.json())
+          const json = await this.fetchRetry(api_endpoint+`transects/data?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
           updateTransectsData(json)
         })
       }
@@ -396,6 +396,7 @@
         this.onSetHotspots = []
         this.onUpdateHotspots = []
         this.onLevelChange = []
+        this.onTransectsDataChange = []
         this.onSetRainfallAvg = []
         this.onUpdateRainfallAvg = []
         this.onSetInfrastructure = []
@@ -534,6 +535,24 @@
         }
       }
 
+      bindTransectsDataChange = func => {
+        this.onTransectsDataChange.push(func)
+      }
+
+      setTransectsData = data => {
+        this.transectsData = data
+        for (const func of this.onTransectsDataChange) {
+          func(this.transectsData)
+        }
+      }
+
+      updateTransectsData = data => {
+        this.transectsData = data
+        for (const func of this.onTransectsDataChange) {
+          func(this.transectsData)
+        }
+      }
+
       bindSetRainfallAvg = (func) => {
         this.onSetRainfallAvg.push(func)
       }
@@ -593,6 +612,13 @@
           this.map.getCanvas().style.cursor = 'default'
         })
 
+        this.map.on('mouseenter', 'transects', () => {
+          this.map.getCanvas().style.cursor = 'pointer'
+        })
+        this.map.on('mouseleave', 'transects', () => {
+          this.map.getCanvas().style.cursor = 'default'
+        })
+
         this.map.on('mouseenter', 'hotspots', () => {
           this.map.getCanvas().style.cursor = 'pointer'
         })
@@ -631,6 +657,12 @@
         })
       }
 
+      bindClickTransect = func => {
+        this.map.on("click", "transects", e => {
+          func(e)
+        })
+      }
+
       displayRainfallChart(data) {
         const stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
         const selected = JSON.parse(JSON.stringify(data))
@@ -657,32 +689,53 @@
       }
 
       displayPopupChart(e, data, sensors) {
-        const coordinates = e.features[0].geometry.coordinates.slice()
-        
+        let coordinates = e.features[0].geometry.coordinates.slice()
+        const type = e.features[0].geometry.type
+        if (type === "LineString") {
+          coordinates = [
+            (coordinates[0][0]+coordinates[1][0])/2,
+            (coordinates[0][1]+coordinates[1][1])/2
+          ]
+        }
+
         while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
           coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360
         }
 
-        const selected = JSON.parse(JSON.stringify(data.features.filter(d => d.id === e.features[0].properties.id).filter(d => d.level < 5000)))
+        let selected
+        if (type === "LineString") {
+          selected = JSON.parse(JSON.stringify(data.features.filter(d => d.id === e.features[0].properties.id)))
+        } else {
+          selected = JSON.parse(JSON.stringify(data.features.filter(d => d.id === e.features[0].properties.id).filter(d => d.level < 5000)))
+          const temp = sensors.features.map(d => [d.properties.id, d.properties.ahd])
+          const ahds = Object.fromEntries(temp)
+
+          selected.forEach(d => {
+              d.level = ahds[d.id] - d.level/1000
+          })
+        }
+        
 
         const stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
         selected.forEach(d => {
             d.stamp = stringtodate(d.stamp)
         })
 
-        const temp = sensors.features.map(d => [d.properties.id, d.properties.ahd])
-        const ahds = Object.fromEntries(temp)
 
-        selected.forEach(d => {
-            d.level = ahds[d.id] - d.level/1000
-        })
 
         this.chart.updateGraph(selected)
+
+        let title
+        if (type === "LineString") {
+          title = `<h2>Transect ${e.features[0].properties.id}</h2>`
+        } else {
+          title = `<h2>Sensor ${e.features[0].properties.id}</h2>`
+        }
         
         new mapboxgl.Popup()
           .setLngLat(coordinates)
           .setHTML(`
-            <h2>Sensor ${e.features[0].properties.id}</h2>
+            ${title}
             ${this.chart.graph.node().innerHTML}
           `)
           .setMaxWidth(400)
@@ -700,6 +753,7 @@
         this.apiHandler = new ApiHandler()
 
         this.view.bindClickSensor(this.handleClickSensor)
+        this.view.bindClickTransect(this.handleClickTransect)
         this.view.dateRangeSelector.bindSetDateRange(this.model.setDateRange)
         this.view.datetimeSelector.bindSetDatetime(this.model.setSelectedTime)
 
@@ -726,6 +780,7 @@
         this.apiHandler.setSelectedTime(liveStartDate)
         // this.apiHandler.bindRadar("", this.model.setRadar, this.model.updateRadar)
         this.apiHandler.bindLevels("", this.model.setLevels, this.model.updateLevels)
+        this.apiHandler.bindTransectsData("", this.model.setTransectsData, this.model.updateTransectsData)
         this.apiHandler.bindRainfallAvg("", this.model.setRainfallAvg, this.model.updateRainfallAvg)
         this.apiHandler.bindCatchment("", this.model.setCatchment)
         this.apiHandler.bindSensors("", this.model.setSensors)
@@ -1061,6 +1116,10 @@
 
       handleClickSensor = (e) => {
         this.view.displayPopupChart(e, this.model.levels, this.model.sensors)
+      }
+
+      handleClickTransect = (e) => {
+        this.view.displayPopupChart(e, this.model.transectsData, this.model.transects)
       }
 
 
