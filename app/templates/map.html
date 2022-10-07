@@ -584,14 +584,6 @@
         this.mapContainer.style.height = "min(60vw, 75vh)"
         this.mapContainer.style.width = "100%"
 
-        this.root.append(this.mapContainer)
-
-        this.dateRangeSelector = new DateRangeSelector()
-        this.root.append(this.dateRangeSelector.getRoot())
-
-        this.datetimeSelector = new DatetimeSelector()
-        this.root.append(this.datetimeSelector.getRoot())
-
 
         this.map = new mapboxgl.Map({
           container: this.mapContainer,
@@ -603,6 +595,66 @@
               [151,-34.32]
           ]
         })
+        
+        const layers = [
+            "sensors",
+            "transects",
+            "hotspots",
+            "infrastructure",
+            ["catchment", "catchment-outline"]
+        ]
+        this.box = document.createElement("div")
+        // this.box.style.display = "block"
+        for (const layer of layers) {
+            const input = document.createElement("input")
+            input.id = layer
+            input.type = "checkbox"
+            input.checked = true
+            let title
+            if (typeof(layer) === "object") {
+              title = layer[0]
+              for (const comp of layer) {
+                input.addEventListener("change", e => {
+                  this.map.setLayoutProperty(
+                    comp,
+                    "visibility",
+                    e.target.checked ? "visible" : "none"
+                  )
+                })
+              }
+
+            } else {
+              title = layer
+              input.addEventListener("change", e => {
+                this.map.setLayoutProperty(
+                  layer,
+                  "visibility",
+                  e.target.checked ? "visible" : "none"
+                )
+              })
+            }
+
+            const div = document.createElement("div")
+            const name = document.createElement("p")
+            name.innerHTML = title
+            div.append(name, input)
+            name.style.display = "inline-block"
+            input.style.display = "inline-block"
+            div.style.display = "inline-block"
+            div.style.padding = "22px"
+            this.box.append(div)
+        }
+
+        this.root.append(this.box)
+
+        this.root.append(this.mapContainer)
+
+        this.dateRangeSelector = new DateRangeSelector()
+        this.root.append(this.dateRangeSelector.getRoot())
+
+        this.datetimeSelector = new DatetimeSelector()
+        this.root.append(this.datetimeSelector.getRoot())
+
         this.map.getCanvas().style.cursor = 'default'
 
         this.map.on('mouseenter', 'sensors', () => {
