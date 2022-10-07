@@ -142,6 +142,39 @@ def sensors_data():
             results["features"] = []
         return jsonify(results)
 
+@app.route("/api/transects")
+def transects():
+    with engine.connect() as conn:
+        result = conn.execute(text("""
+            SELECT json_build_object(
+                'type', 'FeatureCollection',
+                'features', json_agg(st_asgeojson(t.*)::json)
+            )
+            FROM
+            (SELECT gid, geom, name, regr, catchment FROM transects) AS t
+        """))
+
+        return jsonify(result.all()[0][0])
+
+@app.route("/api/transects/data")
+def transects_data():
+    with engine.connect() as conn:
+        result = conn.execute(text("""
+            SELECT json_build_object(
+                'type', 'FeatureCollection',
+                'features', json_agg(t.*)
+            )
+            FROM
+            (SELECT gid AS id, regr[1]*flow^0 + regr[2]*flow^1 + regr[3]*flow^2 + regr[4]*flow^3 AS level, timestep AS stamp FROM experiment_data JOIN transects using(catchment) WHERE index = 9000001) as t(id, level, stamp)
+        """))
+
+        results = result.all()[0][0]
+        if (results["features"] == None):
+            results["features"] = []
+        return jsonify(results)
+
+
+
 @app.route("/api/hotspots")
 def hotspot():
     """a"""

@@ -534,17 +534,18 @@
       constructor() {
         this.root = document.createElement("div")
 
+        this.mapContainer = document.createElement("div")
+        this.mapContainer.style.height = "min(60vw, 75vh)"
+        this.mapContainer.style.width = "100%"
+
+        this.root.append(this.mapContainer)
+
         this.dateRangeSelector = new DateRangeSelector()
         this.root.append(this.dateRangeSelector.getRoot())
 
         this.datetimeSelector = new DatetimeSelector()
         this.root.append(this.datetimeSelector.getRoot())
 
-        this.mapContainer = document.createElement("div")
-        this.mapContainer.style.height = "min(60vw, 75vh)"
-        this.mapContainer.style.width = "100%"
-
-        this.root.append(this.mapContainer)
 
         this.map = new mapboxgl.Map({
           container: this.mapContainer,
