@@ -314,6 +314,11 @@
         setSensors(json)
       }
 
+      async bindTransects(apiRef, setTransects) {
+        const json = await this.fetchRetry(api_endpoint+"transects").then(response => response.json())
+        setTransects(json)
+      }
+
       async bindHotspots(apiRef, setHotspots, updateHotspots) {
         const json = await this.fetchRetry(api_endpoint+`hotspots/at?time=${this.selectedTime}`).then(response => response.json())
         setHotspots(json)
@@ -346,6 +351,15 @@
         })
       }
 
+      async bindTransectsData(apiRef, setTransectsData, updateTransectsData) {
+        const json = await this.fetchRetry(api_endpoint+`transects/data`).then(response => response.json())
+        setTransectsData(json)
+        this.onSetDateRange.push(async () => {
+          const json = await this.fetchRetry(api_endpoint+`transects/data`).then(response => response.json())
+          updateTransectsData(json)
+        })
+      }
+
       async bindRainfallAvg(apiRef, setRainfallAvg, updateRainfallAvg) {
         const json = await this.fetchRetry(api_endpoint+`rainfall/avg?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
         setRainfallAvg(json)
@@ -363,6 +377,7 @@
 
         this.catchment = {}
         this.sensors = {}
+        this.transects = {}
 
         this.radar = {}
         this.hotpsots = {}
@@ -375,6 +390,7 @@
 
         this.onSetCatchment = []
         this.onSetSensors = []
+        this.onSetTransects = []
 
         this.onRadarChange = []
         this.onSetHotspots = []
@@ -405,6 +421,17 @@
         this.sensors = data
         for (const func of this.onSetSensors) {
           func(this.sensors)
+        }
+      }
+
+      bindSetTransects = func => {
+        this.onSetTransects.push(func)
+      }
+
+      setTransects = data => {
+        this.transects = data
+        for (const func of this.onSetTransects) {
+          func(this.transects)
         }
       }
 
@@ -680,6 +707,7 @@
         this.model.bindUpdateRainfallAvg(this.onUpdateRainfallAvg)
         this.model.bindSetCatchment(this.onSetCatchment)
         this.model.bindSetCatchment(this.onSetSensors)
+        this.model.bindSetTransects(this.onSetTransects)
         this.model.bindSetHotspots(this.onSetHotspots)
         this.model.bindUpdateHotspots(this.onUpdateHotspots)
         this.model.bindSetInfrastructure(this.onSetInfrastructure)
@@ -701,6 +729,7 @@
         this.apiHandler.bindRainfallAvg("", this.model.setRainfallAvg, this.model.updateRainfallAvg)
         this.apiHandler.bindCatchment("", this.model.setCatchment)
         this.apiHandler.bindSensors("", this.model.setSensors)
+        this.apiHandler.bindTransects("", this.model.setTransects)
         this.apiHandler.bindHotspots("", this.model.setHotspots, this.model.updateHotspots)
         this.apiHandler.bindInfrastructure("", this.model.setInfrastructure, this.model.updateInfrastructure)
         
@@ -786,6 +815,37 @@
         }
         waiting()
 
+      }
+
+      onSetTransects = () => {
+        const addLayer = () => {
+          this.view.map.addSource("transects", {
+            type: "geojson",
+            data: this.model.transects
+          })
+
+          this.view.map.addLayer({
+            "id": "transects",
+            "type": "line",
+            "source": "transects",
+            "paint": {
+              "line-color": "red",
+              "line-width": 5,
+              "line-opacity": 0.8,
+            }
+          })
+
+        }
+
+        const waiting = () => {
+          if (!this.view.map.isStyleLoaded()) {
+            setTimeout(waiting, 200)
+          } else {
+            addLayer()
+          }
+        }
+        waiting()
+        
       }
 
       onSetHotspots = () => {
