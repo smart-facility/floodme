@@ -267,16 +267,18 @@ current_aeps AS
 (SELECT
 *,
 CASE
-	WHEN 2*level > aep[6] THEN 'PMF'
+	WHEN level > aep[6] THEN 'PMF'
 	WHEN level > aep[5] THEN '1pct'
 	WHEN level > aep[4] THEN '2pct'
 	WHEN level > aep[3] THEN '5pct'
 	WHEN level > aep[2] THEN '10pct'
 	WHEN level >= aep[1] THEN '20pct'
+ELSE
+    null
 END
 AS current_aep
 FROM joined),
-road AS (SELECT road_points.geom, road_points.catchment_id, linked_sensors.sensor, st_value((SELECT st_setsrid(rast, 4326) FROM dem), road_points.geom) AS ground_z FROM road_points JOIN linked_sensors ON road_points.catchment_id = linked_sensors.catchment),
+road AS (SELECT assets.geom, assets.catchment_id, linked_sensors.sensor, st_value((SELECT st_setsrid(rast, 4326) FROM dem), assets.geom) AS ground_z FROM assets JOIN linked_sensors ON assets.catchment_id = linked_sensors.catchment),
 road_aep AS (SELECT road.geom, current_aeps.current_aep, road.ground_z, sensor, stamp FROM road JOIN current_aeps ON road.sensor = current_aeps.id),
 points_with_levels AS
 (SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='20pct'), geom) AS flood_z, * FROM road_aep WHERE current_aep = '20pct'
@@ -291,8 +293,8 @@ UNION
  UNION
  SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='PMF'), geom) AS flood_z, * FROM road_aep WHERE current_aep = 'PMF'
  UNION
-SELECT null AS flood_z, * FROM road_aep WHERE current_aep IS null)
-SELECT *, flood_z - ground_z AS flood_depth, sensor FROM points_with_levels WHERE flood_z > ground_z) AS t
+SELECT -20 AS flood_z, * FROM road_aep WHERE current_aep IS null)
+SELECT *, flood_z - ground_z AS flood_depth, sensor FROM points_with_levels) AS t
 """
         ), {"time": time})
         results = result.all()[0][0]
