@@ -1104,6 +1104,7 @@
             .setLngLat(coordinates)
             .setHTML(`
               <h2>Infrastructure</h2>
+              <h3>${e.features[0].properties.description}</h3>
               <h3>Updated: ${e.features[0].properties.stamp}</h3>
               <h3>Linked Sensor: ${e.features[0].properties.sensor}</h3>
               <h3>Ground Level: ${e.features[0].properties.ground_z}</h3>

@@ -278,8 +278,8 @@ ELSE
 END
 AS current_aep
 FROM joined),
-road AS (SELECT assets.geom, assets.catchment_id, linked_sensors.sensor, st_value((SELECT st_setsrid(rast, 4326) FROM dem), assets.geom) AS ground_z FROM assets JOIN linked_sensors ON assets.catchment_id = linked_sensors.catchment),
-road_aep AS (SELECT road.geom, current_aeps.current_aep, road.ground_z, sensor, stamp FROM road JOIN current_aeps ON road.sensor = current_aeps.id),
+road AS (SELECT assets.geom, assets.catchment_id, assets.descripton AS description, linked_sensors.sensor, st_value((SELECT st_setsrid(rast, 4326) FROM dem), assets.geom) AS ground_z FROM assets JOIN linked_sensors ON assets.catchment_id = linked_sensors.catchment),
+road_aep AS (SELECT road.geom, road.description, current_aeps.current_aep, road.ground_z, sensor, stamp FROM road JOIN current_aeps ON road.sensor = current_aeps.id),
 points_with_levels AS
 (SELECT st_value((SELECT st_setsrid(rast, 4326) FROM hydraulics WHERE filename='20pct'), geom) AS flood_z, * FROM road_aep WHERE current_aep = '20pct'
 UNION
