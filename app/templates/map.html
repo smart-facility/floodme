@@ -697,7 +697,17 @@
         this.chart = new Chart("Water Level Sensor Reading (mAHD)")
         this.chart.createGraph([])
 
-        this.rainfallChart = {}
+        this.bottomBar = document.createElement("div")
+        this.bottomBar.style.display = "flex"
+        this.root.append(this.bottomBar)
+        this.rainfallChartDiv = document.createElement("div")
+        // this.rainfallChartDiv.style.display = "inline"
+        this.bottomBar.append(this.rainfallChartDiv)
+        this.atRiskList = document.createElement("div")
+        this.atRiskList.style.height = "260px"
+        this.atRiskList.style.overflowY = "scroll"
+        this.atRiskList.style.flexBasis = "100%"
+        this.bottomBar.append(this.atRiskList)
       }
 
       getRoot() {
@@ -716,6 +726,29 @@
         })
       }
 
+      displayAtRiskInf(data) {
+        let inf = data.slice(0)
+        console.log(inf)
+        inf.sort((a,b) => {
+          if (a.properties.flood_depth > b.properties.flood_depth) {
+              return 1 } else {
+              return - 1 }
+        })
+        inf = inf.filter(obj => obj.properties.flood_depth > -0.5)
+        const cells = []
+        if (inf.length === 0) {
+          const msg = document.createElement("div")
+          msg.innerHTML = "No infrastructure assets at risk"
+          cells.push(msg)
+        }
+        for (const datum of inf) {
+          const cell = document.createElement("div")
+          cell.innerHTML = `Location: ${datum.properties.description}, Flood Depth: ${datum.properties.flood_depth}`
+          cells.push(cell)
+        }
+        this.atRiskList.append(...cells)
+      }
+
       displayRainfallChart(data) {
         const stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
         const selected = JSON.parse(JSON.stringify(data))
@@ -724,9 +757,9 @@
             d.avg = (d.avg/300)*3600
         })
 
-        this.rainfallChart = new Chart("BOM Average Rainfall (mm/hr)", 720)
+        this.rainfallChart = new Chart("BOM Average Rainfall (mm/hr)", 600)
         this.rainfallChart.createGraph2(selected)
-        this.root.append(this.rainfallChart.graph.node())
+        this.rainfallChartDiv.append(this.rainfallChart.graph.node())
         // const help = `
         // Welcome to the development build of the Floodaware dashboard.
         // You can click on level icons to view information about the water level sensors,
@@ -1092,6 +1125,8 @@
         }
         waiting()
 
+        this.view.displayAtRiskInf(this.model.infrastructure.features)
+
         this.view.map.on("click", "infrastructure", e => {
 
           const coordinates = e.features[0].geometry.coordinates.slice()
@@ -1121,6 +1156,7 @@
 
       onUpdateInfrastructure = data => {
         this.view.map.getSource("infrastructure").setData(data)
+        this.view.displayAtRiskInf(data.features)
       }
 
       onSetRainfallAvg = () => {
