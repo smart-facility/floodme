@@ -746,6 +746,7 @@
           cell.innerHTML = `Location: ${datum.properties.description}, Flood Depth: ${datum.properties.flood_depth}`
           cells.push(cell)
         }
+        this.atRiskList.innerHTML = ""
         this.atRiskList.append(...cells)
       }
 
