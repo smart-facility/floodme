@@ -151,7 +151,7 @@ def transects():
                 'features', json_agg(st_asgeojson(t.*)::json)
             )
             FROM
-            (SELECT gid AS id, geom, name, regr, catchment FROM transects_new) AS t
+            (SELECT gid AS id, geom, name, regr, catchment FROM transects_new WHERE name IS NOT NULL) AS t
         """))
 
         return jsonify(result.all()[0][0])
