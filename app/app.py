@@ -151,7 +151,7 @@ def transects():
                 'features', json_agg(st_asgeojson(t.*)::json)
             )
             FROM
-            (SELECT gid AS id, geom, name, regr, catchment FROM transects) AS t
+            (SELECT gid AS id, geom, name, regr, catchment FROM transects_new) AS t
         """))
 
         return jsonify(result.all()[0][0])
@@ -167,7 +167,7 @@ def transects_data():
                 'features', json_agg(t.*)
             )
             FROM
-            (SELECT gid AS id, regr[1]*flow^0 + regr[2]*flow^1 + regr[3]*flow^2 + regr[4]*flow^3 AS level, timestep AS stamp FROM experiment_data JOIN transects using(catchment) WHERE index = 9000001 AND timestep BETWEEN :start AND :end ORDER BY timestep ASC) as t(id, level, stamp)
+            (SELECT gid AS id, regr[1]*flow^0 + regr[2]*flow^1 + regr[3]*flow^2 + regr[4]*flow^3 AS level, timestep AS stamp FROM experiment_data JOIN transects_new using(catchment) WHERE index = 9000001 AND timestep BETWEEN :start AND :end ORDER BY timestep ASC) as t(id, level, stamp)
         """),{"start": startdate, "end": enddate})
 
         results = result.all()[0][0]
