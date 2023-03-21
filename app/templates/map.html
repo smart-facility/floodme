@@ -10,28 +10,49 @@
   <link href="https://cdn.maptiler.com/mapbox-gl-js/v1.13.2/mapbox-gl.css" rel="stylesheet" />
 
   <script src="https://d3js.org/d3.v5.min.js"></script>
+<style>
+  body {
+    font-family: "Helvetica Neue", Helvetica, sans-serif;
+    font-size: 14px;
+    color: #333;
+    background-color: #bbb;
+  }
 
-  <style>
-    body {
-      font-family: "Helvetica Neue", Helvetica, sans-serif;
-      font-size: 14px;
-      color: #333;
-      background-color: #bbb;
-    }
-  </style>
+  tr:nth-child(odd) {
+    background-color: white;
+  }
+
+  td, th {
+  border: 1px solid #ccc;
+  text-align: left;
+  padding: 4px;
+}
+
+
+</style>
 </head>
 <body>
   <div>
-    <h1 style="margin-bottom:-10px; margin-top:-5px">Floodaware Dashboard</h1>
-    <!-- <p>
-        You can also hover over the graph of the average rainfall from BOM(mm/hr)
-        (currently historical data only) to update the map display of rain clouds
-    </p> -->
+    <h1 style="margin-bottom:-10px; margin-top:0px">Floodaware Dashboard</h1>
+     <p style="margin-bottom:0px;">
+      Disclaimer: This tool is provided for development and trial purposes only. Your use of the site is solely at your own risk. 
+    </p> 
   </div>
   <div id="root"></div>
   
   </div>
   <script>
+    const formatDate = (dateStr) => (dateStr ? dateStr.replace('T', ' ') : dateStr);
+    const formatNumber = (num) => {
+      try {
+        if (typeof num === "number")
+          return (num.toFixed(2)) +' (m)';
+      }catch(err)
+      {
+      }
+      return num;
+    }
+
     class Chart {
       constructor(
         yAxisTitle = "",
@@ -84,26 +105,39 @@
           .attr("d", d3.line()
               .x(d => this.x(d.stamp))
               .y(d => this.y(d.level))
-          )
+          );
+
+         this.group.append("path")
+          .attr("id", "data2")
+          .datum(data)
+          .attr("fill", "none")
+          .attr("stroke", "red")
+          .attr("stroke-width", 1.5)
+          .attr("d", d3.line()
+              .x(d => this.x(d.stamp))
+              .y(d => this.y(d.level))
+          );
         
         this.group.append("text")
           .attr("class", "y label")
           .attr("text-anchor", "end")
-          .attr("y", 6)
+          .attr("y", 0)
           .attr("dy", "-3em")
-          .attr("fill", "white")
+          .attr("fill", "black")
           .attr("transform", "rotate(-90)")
           .text(this.yAxisTitle)
+
+
       }
 
-      updateGraph = (data) => {
+      updateGraph = (data, linkedTransect) => {
 
         this.x = d3.scaleTime()
           .domain(d3.extent(data, d => d.stamp))
           .range([ 0, this.width ])
 
         this.y = d3.scaleLinear()
-          .domain([d3.min(data, d => +d.level)-0.5, d3.max(data, d => +d.level)+0.5])
+          .domain([d3.min(data, d => +d.level)-1, d3.max(data, d => +d.level)+1])
           .range([ this.height, 0 ])
         
         this.group.selectAll("g #xaxis")
@@ -112,6 +146,7 @@
         this.group.selectAll("g #yaxis")
           .call(d3.axisLeft(this.y))
         
+
         this.group.select("path#data")
           .datum(data)
           .attr("fill", "none")
@@ -121,6 +156,39 @@
             .x(d => this.x(d.stamp))
             .y(d => this.y(d.level))
           )
+
+        // this.group.select(".y.label")
+        //   .attr("text-anchor", "end")
+        //   .attr("y", 0)
+        //   .attr("dy", "-3em")
+        //   .attr("fill", "black")
+        //   .attr("transform", "rotate(-90)")
+        //   .text(this.yAxisTitle);
+
+
+
+        if (linkedTransect) {
+          this.group.select("path#data2")
+            .datum(linkedTransect)
+            .attr("fill", "none")
+            .attr("stroke", "red")
+            .attr("stroke-width", 1.5)
+            .attr("d", d3.line()
+              .x(d => this.x(d.stamp))
+              .y(d => this.y(d.level))
+            );
+        } else {
+          this.group.select("path#data2")
+            .datum([])
+            .attr("fill", "none")
+            .attr("stroke", "red")
+            .attr("stroke-width", 1.5)
+            .attr("d", d3.line()
+              .x(d => this.x(d.stamp))
+              .y(d => this.y(d.level))
+            );
+
+        }
       }
 
       createGraph2 = (data) => {
@@ -317,6 +385,7 @@
 
       async bindTransects(apiRef, setTransects) {
         const json = await this.fetchRetry(api_endpoint+"transects").then(response => response.json())
+        console.log('fetching transects ', json);
         setTransects(json)
       }
 
@@ -363,9 +432,11 @@
 
       async bindRainfallAvg(apiRef, setRainfallAvg, updateRainfallAvg) {
         const json = await this.fetchRetry(api_endpoint+`rainfall/avg?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
+        console.log(json);
         setRainfallAvg(json)
         this.onSetDateRange.push(async () => {
           const json = await this.fetchRetry(api_endpoint+`rainfall/avg?startdate=${this.dateRange.start}&enddate=${this.dateRange.end}`).then(response => response.json())
+          console.log(json);
           updateRainfallAvg(json)
         })
       }
@@ -582,7 +653,7 @@
         this.root = document.createElement("div")
 
         this.mapContainer = document.createElement("div")
-        this.mapContainer.style.height = "min(58vw, 58vh)"
+        this.mapContainer.style.height = "min(55vw, 55vh)"
         this.mapContainer.style.width = "100%"
 
 
@@ -642,7 +713,7 @@
             name.style.display = "inline-block"
             input.style.display = "inline-block"
             div.style.display = "inline-block"
-            div.style.padding = "12px"
+            div.style.padding = "5px"
             this.box.append(div)
         }
 
@@ -694,7 +765,7 @@
           this.map.resize()
         })
 
-        this.chart = new Chart("Water Level Sensor Reading (mAHD)")
+        this.chart = new Chart("Level (m)")
         this.chart.createGraph([])
 
         this.bottomBar = document.createElement("div")
@@ -735,19 +806,29 @@
               return - 1 }
         })
         inf = inf.filter(obj => obj.properties.flood_depth > -0.5)
-        const cells = []
+        this.atRiskList.innerHTML = "";
+
         if (inf.length === 0) {
-          const msg = document.createElement("div")
+          const msg = document.createElement("h3")
           msg.innerHTML = "No infrastructure assets at risk"
-          cells.push(msg)
+          this.atRiskList.append(msg);
+        } else {
+          const msg = document.createElement("h3")
+          msg.innerHTML = "Infrastructure assets at risk: "
+          this.atRiskList.append(msg);
+
+          const table = document.createElement("table");
+          const header = document.createElement("tr");
+          header.innerHTML = `<th>Location</th><th>Flood depth </th>`;
+          table.append(header);
+          for (const datum of inf) {
+            const row = document.createElement("tr")
+            row.innerHTML = `<td>${datum.properties.description}</td><td>${formatNumber(datum.properties.flood_depth)} </td>`
+            table.append(row);
+          }
+
+          this.atRiskList.append(table);
         }
-        for (const datum of inf) {
-          const cell = document.createElement("div")
-          cell.innerHTML = `Location: ${datum.properties.description}, Flood Depth: ${datum.properties.flood_depth}`
-          cells.push(cell)
-        }
-        this.atRiskList.innerHTML = ""
-        this.atRiskList.append(...cells)
       }
 
       displayRainfallChart(data) {
@@ -778,16 +859,16 @@
         const selected = JSON.parse(JSON.stringify(data))
         selected.forEach(d => {
             d.stamp = stringtodate(d.stamp)
-            d.avg = (d.avg/300)*3600
+            d.avg = (d.avg/300)*3600*0.05
         })
 
         this.rainfallChart.updateGraph2(selected)
       }
 
-      displayPopupChart(e, data, sensors) {
+      displayPopupChart(e, data, sensors, data_transects, info_transects) {
         let coordinates = e.features[0].geometry.coordinates.slice()
         const type = e.features[0].geometry.type
-        if (type === "LineString") {
+        if (type === "LineString") { //transect
           coordinates = [
             (coordinates[0][0]+coordinates[1][0])/2,
             (coordinates[0][1]+coordinates[1][1])/2
@@ -798,11 +879,20 @@
           coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360
         }
 
-        let selected
-        if (type === "LineString") {
-          selected = JSON.parse(JSON.stringify(data.features.filter(d => d.id === e.features[0].properties.id)))
-        } else {
-          selected = JSON.parse(JSON.stringify(data.features.filter(d => d.id === e.features[0].properties.id).filter(d => d.level < 5000)))
+        
+
+        let selected;
+        let sensorId,tsxId; 
+        if (type === "LineString") { // transect
+          tsxId = e.features[0].properties.id;
+          if (tsxId === 4 )// temp hack for transect disable
+            return;
+
+          selected = JSON.parse(JSON.stringify(data.features.filter(d => d.id === tsxId)));
+          console.log('sed ', selected);
+        } else { //sensor
+          sensorId = e.features[0].properties.id;
+          selected = JSON.parse(JSON.stringify(data.features.filter(d => d.id === sensorId).filter(d => d.level < 5000)))
           const temp = sensors.features.map(d => [d.properties.id, d.properties.ahd])
           const ahds = Object.fromEntries(temp)
 
@@ -810,16 +900,31 @@
               d.level = ahds[d.id] - d.level/1000
           })
         }
-        
 
+        let selectedTransect=null;
         const stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
+
+        if (data_transects && info_transects && (sensorId == 2))
+        {
+          console.log('ehere');
+          selectedTransect = JSON.parse(JSON.stringify(data_transects.features.filter(d => d.id == 4))); //linking sesnor 2 to transact 4
+          console.log('sed for 4 ', selectedTransect);
+          selectedTransect.forEach(d => {
+            d.stamp = stringtodate(d.stamp)
+        });
+
+
+        }
+
+
+
         selected.forEach(d => {
             d.stamp = stringtodate(d.stamp)
-        })
+        });
 
 
 
-        this.chart.updateGraph(selected)
+        this.chart.updateGraph(selected, selectedTransect);
 
         let title
         if (type === "LineString") {
@@ -1060,10 +1165,10 @@
             .setLngLat(coordinates)
             .setHTML(`
               <h2>Hotspot</h2>
-              <h3>Updated: ${e.features[0].properties.stamp}</h3>
+              <h3>Updated: ${formatDate(e.features[0].properties.stamp)}</h3>
               <h3>Linked Sensor: ${e.features[0].properties.linked_sensor}</h3>
-              <h3>Floor Level: ${e.features[0].properties.floor_z}</h3>
-              <h3>Flood Level: ${e.features[0].properties.flood_z === -20 ? "--" : e.features[0].properties.flood_z}</h3>
+              <h3>Floor Level: ${formatNumber(e.features[0].properties.floor_z)}</h3>
+              <h3>Flood Level: ${e.features[0].properties.flood_z === -20 ? "--" : formatNumber(e.features[0].properties.flood_z)}</h3>
               <h3>Predicted Level: --</h3>
 
             `)
@@ -1141,10 +1246,10 @@
             .setHTML(`
               <h2>Infrastructure</h2>
               <h3>${e.features[0].properties.description}</h3>
-              <h3>Updated: ${e.features[0].properties.stamp}</h3>
+              <h3>Updated: ${formatDate(e.features[0].properties.stamp)}</h3>
               <h3>Linked Sensor: ${e.features[0].properties.sensor}</h3>
-              <h3>Ground Level: ${e.features[0].properties.ground_z}</h3>
-              <h3>Flood Level: ${e.features[0].properties.flood_z === -20 ? "--" : e.features[0].properties.flood_z}</h3>
+              <h3>Ground Level: ${formatNumber(e.features[0].properties.ground_z)}</h3>
+              <h3>Flood Level: ${e.features[0].properties.flood_z === -20 ? "--" : formatNumber(e.features[0].properties.flood_z)}</h3>
               <h3>Predicted Level: --</h3>
 
             `)
@@ -1169,7 +1274,7 @@
       }
 
       handleClickSensor = (e) => {
-        this.view.displayPopupChart(e, this.model.levels, this.model.sensors)
+        this.view.displayPopupChart(e, this.model.levels, this.model.sensors, this.model.transectsData, this.model.transects)
       }
 
       handleClickTransect = (e) => {

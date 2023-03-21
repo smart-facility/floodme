@@ -5,6 +5,7 @@ import os, json
 
 dbhost = os.environ.get("DBHOST")
 pword = os.environ.get("DBPWORD")
+h_port = os.environ.get("PORT")
 
 app = Flask(__name__,
             static_url_path="",
@@ -15,7 +16,7 @@ CORS(app)
 # conn = psycopg2.connect(database="floodaware", user="postgres", host=dbhost, password=pword)
 engine = create_engine(f"postgresql://postgres:{pword}@{dbhost}:5432/floodaware", echo=False, future=True)
 
-@app.route("/")
+@app.route("/oldhome")
 def home():
     """a"""
     islive = False
@@ -33,7 +34,7 @@ def home():
     
     return render_template("index.html", flaskislive=int(islive), flaskdaysback=daysback, flaskstartdate=startdate, flaskenddate=enddate)
 
-@app.route("/mb")
+@app.route("/")
 def map():
     """a"""
     return render_template("map.html")
@@ -86,23 +87,25 @@ def rainfall_avg():
     enddate = str(request.args["enddate"])
     with engine.connect() as conn:
         result = conn.execute(text("""
-            SELECT json_build_object(
+           SELECT json_build_object(
                 'type', 'FeatureCollection',
                 'features', json_agg(t.*)
             )
             FROM
-            (SELECT
-            (st_summarystats(
-                st_clip(rast,
-                    (SELECT st_expand(st_envelope(st_collect(geom)), 0.01) FROM catchment)
-                )
-            )).mean as avg, stamp FROM rainfall_raster            
-            WHERE stamp BETWEEN :start AND :end) AS t(avg, stamp)
+            (WITH feat AS (SELECT st_expand(st_envelope(st_collect(geom)), 0.01) as wollfeat FROM catchment) 
+            SELECT   (stats).mean as avg, stamp
+                FROM (SELECT stamp, ST_SummaryStats(ST_Clip(rast,wollfeat)) As stats
+                    FROM rainfall_raster
+                    INNER JOIN feat
+                    ON ST_Intersects(feat.wollfeat,rast)
+                    where stamp BETWEEN :start AND :end
+                ) as foo) AS t(avg, stamp)
         """), {"start": startdate, "end": enddate})
     
         results = result.all()[0][0]
         if (results["features"] == None):
             results["features"] = []
+        #print(results["features"])
         return jsonify(results)
 
 
@@ -342,4 +345,4 @@ def hotty():
 
 
 if (__name__ == "__main__"):
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=int(h_port))
