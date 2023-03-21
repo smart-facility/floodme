@@ -836,7 +836,7 @@
         const selected = JSON.parse(JSON.stringify(data))
         selected.forEach(d => {
             d.stamp = stringtodate(d.stamp)
-            d.avg = (d.avg/300)*3600
+            d.avg = (d.avg/300)*3600*0.05
         })
 
         this.rainfallChart = new Chart("BOM Average Rainfall (mm/hr)", 600)
