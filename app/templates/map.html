@@ -42,6 +42,19 @@
   
   </div>
   <script>
+    ////linking sesnor 2 to transact 4
+    const sensorTransactMapping= {
+      's2' : 4,
+      's4' : 1,
+      's9' : 2,
+      's11' : 6,
+      's13' : 9,
+      's14' : 10,
+      's16' : 13,
+      's22' :3,
+      's37': 11,
+      's39' :5
+    }
     const formatDate = (dateStr) => (dateStr ? dateStr.replace('T', ' ') : dateStr);
     const formatNumber = (num) => {
       try {
@@ -56,9 +69,9 @@
     class Chart {
       constructor(
         yAxisTitle = "",
-        svgWidth = 360,
-        svgHeight = 260,
-        margin = {top: 10, right: 30, bottom: 30, left: 60}
+        svgWidth = 390,
+        svgHeight = 290,
+        margin = {top: 10, right: 90, bottom: 70, left: 60}
       ) 
       {
         this.margin = margin
@@ -88,7 +101,13 @@
         this.group.append("g")
           .attr("id", "xaxis")
           .attr("transform", "translate(0," + this.height + ")")
-          .call(d3.axisBottom(this.x))
+          .call(d3.axisBottom(this.x).tickFormat(d3.timeFormat("%d/%m/%Y %H:%M")))
+          .selectAll("text")  
+          .style("text-anchor", "start")
+          .attr("dx", ".8em")
+          .attr("dy", ".10em")
+          .attr("transform", "rotate(35)");
+
         this.y = d3.scaleLinear()
           .domain([d3.min(data, d => +d.level)-0.5, d3.max(data, d => +d.level)+0.5])
           .range([ this.height, 0 ]);
@@ -125,23 +144,42 @@
           .attr("dy", "-3em")
           .attr("fill", "black")
           .attr("transform", "rotate(-90)")
-          .text(this.yAxisTitle)
+          .text(this.yAxisTitle);
+
+        this.group.append("text")
+          .attr("class", "x label")
+          .attr("text-anchor", "end")
+          .attr("dx", this.width/2 + this.margin.left)
+          .attr("dy", this.height +this.margin.bottom )
+          .text("Date and Time");
+
+
 
 
       }
 
       updateGraph = (data, linkedTransect) => {
 
+        const minTime = d3.min([d3.min(data, d => d.stamp), (linkedTransect ? d3.min(linkedTransect, d => d.stamp) : undefined )]);
+        const maxTime = d3.max([d3.max(data, d => d.stamp), (linkedTransect ? d3.max(linkedTransect, d => d.stamp) : undefined )]);
+        const minLevel = d3.min([d3.min(data, d => +d.level), (linkedTransect ? d3.min(linkedTransect,  d => +d.level) : undefined )]);
+        const maxLevel = d3.max([d3.max(data, d => +d.level), (linkedTransect ? d3.max(linkedTransect,  d => +d.level) : undefined )]);
+
         this.x = d3.scaleTime()
-          .domain(d3.extent(data, d => d.stamp))
+          .domain([minTime, maxTime])
           .range([ 0, this.width ])
 
         this.y = d3.scaleLinear()
-          .domain([d3.min(data, d => +d.level)-1, d3.max(data, d => +d.level)+1])
+          .domain([minLevel-1, maxLevel+1])
           .range([ this.height, 0 ])
         
         this.group.selectAll("g #xaxis")
-          .call(d3.axisBottom(this.x))
+          .call(d3.axisBottom(this.x).tickFormat(d3.timeFormat("%d/%m/%Y %H:%M")))
+          .selectAll("text")  
+          .style("text-anchor", "start")
+          .attr("dx", ".8em")
+          .attr("dy", ".10em")
+          .attr("transform", "rotate(35)");
 
         this.group.selectAll("g #yaxis")
           .call(d3.axisLeft(this.y))
@@ -165,7 +203,8 @@
         //   .attr("transform", "rotate(-90)")
         //   .text(this.yAxisTitle);
 
-
+        console.log('removing...');
+        this.group.selectAll(".lgnd").remove();
 
         if (linkedTransect) {
           this.group.select("path#data2")
@@ -177,6 +216,15 @@
               .x(d => this.x(d.stamp))
               .y(d => this.y(d.level))
             );
+
+
+          const topX = this.width + 10;
+          const topY = this.height / 2;
+          this.group.append("circle").attr("class", "lgnd").attr("cx", topX).attr("cy", topY).attr("r", 4).style("fill", "steelblue")
+          this.group.append("circle").attr("class", "lgnd").attr("cx", topX).attr("cy", topY + 15).attr("r", 4).style("fill", "red")
+          this.group.append("text").attr("class", "lgnd").attr("x", topX + 10).attr("y", topY).text("Water level").style("font-size", "10px").attr("alignment-baseline", "middle")
+          this.group.append("text").attr("class", "lgnd").attr("x", topX + 10).attr("y", topY + 15).text("Simulated WL").style("font-size", "10px").attr("alignment-baseline", "middle");
+
         } else {
           this.group.select("path#data2")
             .datum([])
@@ -191,6 +239,12 @@
         }
       }
 
+
+
+
+
+
+
       createGraph2 = (data) => {
                 
         this.x = d3.scaleTime()
@@ -198,8 +252,13 @@
           .range([ 0, this.width ])
         this.group.append("g")
           .attr("id", "xaxis")
-          .attr("transform", "translate(0," + this.height + ")")
-          .call(d3.axisBottom(this.x));
+          .attr("transform", "translate(0," + (this.height ) + ")")
+          .call(d3.axisBottom(this.x).tickFormat(d3.timeFormat("%d/%m/%Y %H:%M")))
+          .selectAll("text")  
+          .style("text-anchor", "start")
+          .attr("dx", ".8em")
+          .attr("dy", ".10em")
+          .attr("transform", "rotate(35)");
 
         this.y = d3.scaleLinear()
           .domain([0, d3.max(data, d => +d.avg)])
@@ -222,7 +281,7 @@
         this.group.append("text")
           .attr("class", "y label")
           .attr("text-anchor", "end")
-          .attr("y", 6)
+          .attr("y", 0)
           .attr("dy", "-3em")
           .attr("transform", "rotate(-90)")
           .text(this.yAxisTitle)
@@ -238,7 +297,12 @@
           .range([ this.height, 0 ])
 
         this.group.selectAll("g #xaxis")
-          .call(d3.axisBottom(this.x))
+          .call(d3.axisBottom(this.x).tickFormat(d3.timeFormat("%d/%m/%Y %H:%M")))
+          .selectAll("text")  
+          .style("text-anchor", "start")
+          .attr("dx", ".8em")
+          .attr("dy", ".10em")
+          .attr("transform", "rotate(35)");
 
         this.group.selectAll("g #yaxis")
           .call(d3.axisLeft(this.y))
@@ -653,7 +717,7 @@
         this.root = document.createElement("div")
 
         this.mapContainer = document.createElement("div")
-        this.mapContainer.style.height = "min(55vw, 55vh)"
+        this.mapContainer.style.height = "min(50vw, 50vh)"
         this.mapContainer.style.width = "100%"
 
 
@@ -765,7 +829,7 @@
           this.map.resize()
         })
 
-        this.chart = new Chart("Level (m)")
+        this.chart = new Chart("m AHD")
         this.chart.createGraph([])
 
         this.bottomBar = document.createElement("div")
@@ -775,7 +839,7 @@
         // this.rainfallChartDiv.style.display = "inline"
         this.bottomBar.append(this.rainfallChartDiv)
         this.atRiskList = document.createElement("div")
-        this.atRiskList.style.height = "260px"
+        this.atRiskList.style.height = "290px"
         this.atRiskList.style.overflowY = "scroll"
         this.atRiskList.style.flexBasis = "100%"
         this.bottomBar.append(this.atRiskList)
@@ -839,7 +903,7 @@
             d.avg = (d.avg/300)*3600*0.05
         })
 
-        this.rainfallChart = new Chart("BOM Average Rainfall (mm/hr)", 600)
+        this.rainfallChart = new Chart("BoM rainfall (mm/5 min)", 600)
         this.rainfallChart.createGraph2(selected)
         this.rainfallChartDiv.append(this.rainfallChart.graph.node())
         // const help = `
@@ -885,7 +949,7 @@
         let sensorId,tsxId; 
         if (type === "LineString") { // transect
           tsxId = e.features[0].properties.id;
-          if (tsxId === 4 )// temp hack for transect disable
+           if (Object.values(sensorTransactMapping).includes(tsxId) )// temp hack for transect disable
             return;
 
           selected = JSON.parse(JSON.stringify(data.features.filter(d => d.id === tsxId)));
@@ -904,11 +968,11 @@
         let selectedTransect=null;
         const stringtodate = datestring => d3.timeParse("%Y-%m-%dT%H:%M:%S")(datestring)
 
-        if (data_transects && info_transects && (sensorId == 2))
+        const linkedTransectNo= sensorTransactMapping['s'+sensorId];
+
+        if (data_transects && info_transects && linkedTransectNo  )
         {
-          console.log('ehere');
-          selectedTransect = JSON.parse(JSON.stringify(data_transects.features.filter(d => d.id == 4))); //linking sesnor 2 to transact 4
-          console.log('sed for 4 ', selectedTransect);
+          selectedTransect = JSON.parse(JSON.stringify(data_transects.features.filter(d => d.id == linkedTransectNo))); 
           selectedTransect.forEach(d => {
             d.stamp = stringtodate(d.stamp)
         });
