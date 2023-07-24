@@ -741,11 +741,12 @@
         ]
         this.box = document.createElement("div")
         // this.box.style.display = "block"
+
         for (const layer of layers) {
             const input = document.createElement("input")
             input.id = layer
             input.type = "checkbox"
-            input.checked = true
+            input.checked = (layer !== 'transects')
             let title
             if (typeof(layer) === "object") {
               title = layer[0]
@@ -821,7 +822,7 @@
           this.map.getCanvas().style.cursor = 'default'
         })
 
-        this.map.on("load", () => {          
+        this.map.on("load", () => {
           this.map.addControl(new mapboxgl.NavigationControl())
         })
 
@@ -1153,7 +1154,12 @@
               "line-width": 5,
               "line-opacity": 0.8,
             }
-          })
+          });
+          this.view.map.setLayoutProperty(
+            "transects",
+            "visibility",
+            "none"
+          );
 
         }
 
